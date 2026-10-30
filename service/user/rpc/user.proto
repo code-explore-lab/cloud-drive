@@ -1,0 +1,109 @@
+
+syntax = "proto3";
+
+package user;
+
+option go_package = "./user";
+
+service User {
+  // ---- 对外：由 user-api 调用 ----
+  rpc Register(RegisterRequest) returns (RegisterResponse);
+  rpc Login(LoginRequest) returns (LoginResponse);
+  rpc Logout(LogoutRequest) returns (LogoutResponse);
+  rpc RefreshToken(RefreshTokenRequest) returns (RefreshTokenResponse);
+  rpc GetUser(GetUserRequest) returns (GetUserResponse);
+  rpc GetQuota(GetQuotaRequest) returns (GetQuotaResponse);
+
+  // ---- 内部：由 file / storage 服务调用 ----
+  rpc ValidateToken(ValidateTokenRequest) returns (ValidateTokenResponse);
+  rpc ReserveQuota(ReserveQuotaRequest) returns (ReserveQuotaResponse);
+  rpc ReleaseQuota(ReleaseQuotaRequest) returns (ReleaseQuotaResponse);
+}
+message LogoutRequest{}
+message LogoutResponse{}
+message RegisterRequest {
+  string username = 1;
+  string password = 2;
+  string email = 3;
+}
+
+message RegisterResponse {
+  int64 user_id = 1;
+  string username = 2;
+}
+
+message LoginRequest {
+  string username = 1;
+  string password = 2;
+}
+
+message LoginResponse {
+  string access_token = 1;
+  string refresh_token = 2;
+  int64 expires_at = 3;
+}
+
+message RefreshTokenRequest {
+  string refresh_token = 1;
+}
+
+message RefreshTokenResponse {
+  string access_token = 1;
+  string refresh_token = 2;
+  int64 expires_at = 3;
+}
+
+message GetUserRequest {
+  int64 user_id = 1;
+}
+
+message GetUserResponse {
+  int64 user_id = 1;
+  string username = 2;
+  string email = 3;
+  bool active = 4;
+  int64 created_at = 5;
+}
+
+message ValidateTokenRequest {
+  string access_token = 1;
+}
+
+message ValidateTokenResponse {
+  bool valid = 1;
+  int64 user_id = 2;
+  string username = 3;
+}
+
+message GetQuotaRequest {
+  int64 user_id = 1;
+}
+
+message GetQuotaResponse {
+  int64 total_bytes = 1;
+  int64 used_bytes = 2;
+  int64 reserved_bytes = 3;
+}
+
+message ReserveQuotaRequest {
+  int64 user_id = 1;
+  int64 request_bytes = 2;
+  string request_id = 3;
+}
+
+message ReserveQuotaResponse {
+  bool success = 1;
+  int64 reserved_bytes = 2;
+  string reason = 3;
+}
+
+message ReleaseQuotaRequest {
+  int64 user_id = 1;
+  int64 release_bytes = 2;
+  string request_id = 3;
+}
+
+message ReleaseQuotaResponse {
+  bool success = 1;
+  string reason = 2;
+}

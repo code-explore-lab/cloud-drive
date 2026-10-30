@@ -1,0 +1,74 @@
+syntax = "v1"
+
+info (
+	title:   "CloudDrive Storage API"
+	desc:    "File object storage HTTP API"
+	author:  "CloudDrive"
+	version: "v1"
+)
+
+type InitStorageUploadReq {
+	UploadID    string `json:"uploadId"`
+	UserID      int64  `json:"userId"`
+	FileName    string `json:"fileName"`
+	Size        int64  `json:"size"`
+	ContentType string `json:"contentType"`
+	ContentHash string `json:"contentHash"`
+}
+
+type InitStorageUploadResp {
+	UploadID    string `json:"uploadId"`
+	ChunkSize   int64  `json:"chunkSize"`
+	TotalChunks int64  `json:"totalChunks"`
+}
+
+type UploadPartReq {
+	UploadID   string `path:"uploadId"`
+	PartNumber int64  `path:"partNumber"`
+}
+
+type UploadPartResp {
+	UploadID   string `json:"uploadId"`
+	PartNumber int64  `json:"partNumber"`
+	ETag       string `json:"etag"`
+}
+
+type CompleteStorageUploadReq {
+	UploadID string `json:"uploadId"`
+}
+
+type CompleteStorageUploadResp {
+	UploadID    string `json:"uploadId"`
+	ObjectKey   string `json:"objectKey"`
+	Size        int64  `json:"size"`
+	ContentHash string `json:"contentHash"`
+	Status      string `json:"status"`
+}
+
+type GetStorageObjectResp {
+	ObjectKey   string `json:"objectKey"`
+	Size        int64  `json:"size"`
+	ContentType string `json:"contentType"`
+}
+
+type AbortUploadResp {
+	Success bool `json:"success"`
+}
+
+service storage-api {
+	@handler InitUpload
+	post /internal/v1/storage/uploads (InitStorageUploadReq) returns (InitStorageUploadResp)
+
+	@handler UploadPart
+	post /internal/v1/storage/uploads/:uploadId/parts/:partNumber (UploadPartReq) returns (UploadPartResp)
+
+	@handler CompleteUpload
+	post /internal/v1/storage/uploads/:uploadId/complete (CompleteStorageUploadReq) returns (CompleteStorageUploadResp)
+
+	@handler GetObject
+	get /internal/v1/storage/objects/:objectKey returns (GetStorageObjectResp)
+
+	@handler AbortUpload
+	delete /internal/v1/storage/uploads/:uploadId returns (AbortUploadResp)
+}
+

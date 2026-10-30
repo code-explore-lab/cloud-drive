@@ -1,0 +1,11 @@
+Name: file-api
+Host: 0.0.0.0
+Port: 8001
+
+Mysql:
+  DataSource: root:123456@tcp(127.0.0.1:13306)/cloud-drive?charset=utf8mb4&parseTime=true&loc=Asia%2FShanghai
+
+CacheRedis:
+  - Host: 127.0.0.1:16379
+    Pass:
+    Type: node

@@ -1,0 +1,67 @@
+
+syntax = "proto3";
+
+package file;
+
+option go_package = "./file";
+
+service File {
+  rpc GetFile(GetFileRequest) returns (GetFileResponse);
+  rpc CreateFile(CreateFileRequest) returns (CreateFileResponse);
+  rpc UpdateFileStatus(UpdateFileStatusRequest) returns (UpdateFileStatusResponse);
+  rpc DeleteFile(DeleteFileRequest) returns (DeleteFileResponse);
+}
+
+message GetFileRequest {
+  int64 file_id = 1;
+  int64 user_id = 2;
+}
+
+message GetFileResponse {
+  int64 file_id = 1;
+  int64 owner_id = 2;
+  int64 parent_id = 3;
+  string name = 4;
+  int64 size = 5;
+  string content_type = 6;
+  string content_hash = 7;
+  string object_key = 8;
+  string status = 9;
+}
+
+message CreateFileRequest {
+  int64 owner_id = 1;
+  int64 parent_id = 2;
+  string name = 3;
+  int64 size = 4;
+  string content_type = 5;
+  string content_hash = 6;
+  string object_key = 7;
+  string request_id = 8;
+}
+
+message CreateFileResponse {
+  int64 file_id = 1;
+  bool success = 2;
+}
+
+message UpdateFileStatusRequest {
+  int64 file_id = 1;
+  int64 owner_id = 2;
+  string status = 3;
+  string request_id = 4;
+}
+
+message UpdateFileStatusResponse {
+  bool success = 1;
+}
+
+message DeleteFileRequest {
+  int64 file_id = 1;
+  int64 owner_id = 2;
+  string request_id = 3;
+}
+
+message DeleteFileResponse {
+  bool success = 1;
+}

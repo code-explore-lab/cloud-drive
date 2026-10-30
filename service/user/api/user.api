@@ -1,0 +1,75 @@
+syntax = "v1"
+
+info (
+	title:   "CloudDrive User API"
+	desc:    "User management HTTP API"
+	author:  "CloudDrive"
+	version: "v1"
+)
+
+type RegisterReq {
+	Username string `json:"username" validate:"required,min=3,max=32"`
+	Password string `json:"password" validate:"required,min=8,max=72"`
+	Email    string `json:"email,optional"`
+}
+
+type RegisterResp {
+	UserID   int64  `json:"userId"`
+	Username string `json:"username"`
+}
+
+type LoginReq {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
+type LoginResp {
+	AccessToken  string `json:"accessToken"`
+	RefreshToken string `json:"refreshToken"`
+	ExpiresAt    int64  `json:"expiresAt"`
+}
+
+type UserInfoReq {}
+
+type UserInfoResp {
+	UserID    int64  `json:"userId"`
+	Username  string `json:"username"`
+	Email     string `json:"email"`
+	CreatedAt int64  `json:"createdAt"`
+}
+
+type QuotaReq {}
+
+type QuotaResp {
+	TotalBytes    int64 `json:"totalBytes"`
+	UsedBytes     int64 `json:"usedBytes"`
+	ReservedBytes int64 `json:"reservedBytes"`
+}
+
+type RefreshTokenReq {
+	RefreshToken string `json:"refreshToken"`
+}
+
+type RefreshTokenResp {
+	AccessToken  string `json:"accessToken"`
+	RefreshToken string `json:"refreshToken"`
+	ExpiresAt    int64  `json:"expiresAt"`
+}
+
+service user-api {
+	@handler Register
+	post /v1/users/register (RegisterReq) returns (RegisterResp)
+
+	@handler Login
+	post /v1/users/login (LoginReq) returns (LoginResp)
+
+	@handler GetUserInfo
+	get /v1/users/me returns (UserInfoResp)
+
+	@handler GetQuota
+	get /v1/users/me/quota returns (QuotaResp)
+
+	@handler RefreshToken
+	post /v1/users/refresh (RefreshTokenReq) returns (RefreshTokenResp)
+}
+

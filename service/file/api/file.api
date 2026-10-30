@@ -1,0 +1,102 @@
+syntax = "v1"
+
+info (
+	title:   "CloudDrive File API"
+	desc:    "File and folder management HTTP API"
+	author:  "CloudDrive"
+	version: "v1"
+)
+
+type FileItem {
+	FileID      int64  `json:"fileId"`
+	ParentID    int64  `json:"parentId"`
+	Name        string `json:"name"`
+	Size        int64  `json:"size"`
+	ContentType string `json:"contentType"`
+	IsFolder    bool   `json:"isFolder"`
+	Status      string `json:"status"`
+	CreatedAt   int64  `json:"createdAt"`
+	UpdatedAt   int64  `json:"updatedAt"`
+}
+
+type ListFilesReq {
+	ParentID int64 `form:"parentId,optional"`
+	Page     int64 `form:"page,default=1"`
+	PageSize int64 `form:"pageSize,default=20"`
+}
+
+type ListFilesResp {
+	Items    []FileItem `json:"items"`
+	Total    int64      `json:"total"`
+	Page     int64      `json:"page"`
+	PageSize int64      `json:"pageSize"`
+}
+
+type CreateFolderReq {
+	ParentID int64  `json:"parentId"`
+	Name     string `json:"name"`
+}
+
+type CreateFolderResp {
+	FolderID int64 `json:"folderId"`
+}
+
+type RenameFileReq {
+	Name string `json:"name"`
+}
+
+type DeleteFileResp {
+	Success bool `json:"success"`
+}
+
+type InitUploadReq {
+	ParentID    int64  `json:"parentId"`
+	Name        string `json:"name"`
+	Size        int64  `json:"size"`
+	ContentType string `json:"contentType"`
+	ContentHash string `json:"contentHash"`
+}
+
+type InitUploadResp {
+	UploadID    string `json:"uploadId"`
+	FileID      int64  `json:"fileId"`
+	ChunkSize   int64  `json:"chunkSize"`
+	TotalChunks int64  `json:"totalChunks"`
+}
+
+type CompleteUploadReq {
+	UploadID string `json:"uploadId"`
+}
+
+type CompleteUploadResp {
+	FileID int64  `json:"fileId"`
+	Status string `json:"status"`
+}
+
+type GetFileResp {
+	File FileItem `json:"file"`
+}
+
+service file-api {
+	@handler ListFiles
+	get /v1/files (ListFilesReq) returns (ListFilesResp)
+
+	@handler CreateFolder
+	post /v1/folders (CreateFolderReq) returns (CreateFolderResp)
+
+	@handler RenameFile
+	put /v1/files/:fileId/name (RenameFileReq)
+
+	@handler DeleteFile
+	delete /v1/files/:fileId returns (DeleteFileResp)
+
+	@handler GetFile
+	get /v1/files/:fileId returns (GetFileResp)
+
+	@handler InitUpload
+	post /v1/uploads (InitUploadReq) returns (InitUploadResp)
+
+	@handler CompleteUpload
+	post /v1/uploads/:uploadId/complete (CompleteUploadReq) returns (CompleteUploadResp)
+}
+

@@ -1,0 +1,63 @@
+
+syntax = "proto3";
+
+package storage;
+
+option go_package = "./storage";
+
+service Storage {
+  rpc InitUpload(InitUploadRequest) returns (InitUploadResponse);
+  rpc CompleteUpload(CompleteUploadRequest) returns (CompleteUploadResponse);
+  rpc DeleteObject(DeleteObjectRequest) returns (DeleteObjectResponse);
+  rpc GetObjectInfo(GetObjectInfoRequest) returns (GetObjectInfoResponse);
+}
+
+message InitUploadRequest {
+  string upload_id = 1;
+  int64 user_id = 2;
+  string file_name = 3;
+  int64 size = 4;
+  string content_type = 5;
+  string content_hash = 6;
+}
+
+message InitUploadResponse {
+  string upload_id = 1;
+  int64 chunk_size = 2;
+  int64 total_chunks = 3;
+  bool success = 4;
+}
+
+message CompleteUploadRequest {
+  string upload_id = 1;
+  int64 user_id = 2;
+  string request_id = 3;
+}
+
+message CompleteUploadResponse {
+  string object_key = 1;
+  int64 size = 2;
+  string content_hash = 3;
+  bool success = 4;
+}
+
+message DeleteObjectRequest {
+  string object_key = 1;
+  string request_id = 2;
+}
+
+message DeleteObjectResponse {
+  bool success = 1;
+}
+
+message GetObjectInfoRequest {
+  string object_key = 1;
+}
+
+message GetObjectInfoResponse {
+  string object_key = 1;
+  int64 size = 2;
+  string content_type = 3;
+  string content_hash = 4;
+  bool exists = 5;
+}
