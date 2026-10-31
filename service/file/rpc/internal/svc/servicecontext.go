@@ -9,6 +9,7 @@ import (
 
 type ServiceContext struct {
 	Config        config.Config
+	Conn          sqlx.SqlConn
 	FilesModel    model.FilesModel
 	VersionsModel model.FileVersionsModel
 	FoldersModel  model.FoldersModel
@@ -19,6 +20,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	conn := sqlx.NewMysql(c.Mysql.DataSource)
 	return &ServiceContext{
 		Config:        c,
+		Conn:          conn,
 		FilesModel:    model.NewFilesModel(conn, c.CacheRedis),
 		VersionsModel: model.NewFileVersionsModel(conn, c.CacheRedis),
 		FoldersModel:  model.NewFoldersModel(conn, c.CacheRedis),

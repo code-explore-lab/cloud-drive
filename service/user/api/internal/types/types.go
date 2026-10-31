@@ -14,6 +14,15 @@ type LoginResp struct {
 	ExpiresAt    int64  `json:"expiresAt"`
 }
 
+type LogoutReq struct {
+	RefreshToken string `json:"refreshToken,optional"`
+}
+
+type LogoutResp struct {
+	Success      bool  `json:"success"`
+	RevokedCount int64 `json:"revokedCount"`
+}
+
 type QuotaReq struct {
 }
 

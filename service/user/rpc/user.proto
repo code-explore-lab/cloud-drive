@@ -16,11 +16,16 @@ service User {
 
   // ---- 内部：由 file / storage 服务调用 ----
   rpc ValidateToken(ValidateTokenRequest) returns (ValidateTokenResponse);
+  // ReserveQuota 预占额度：reserved += bytes。
   rpc ReserveQuota(ReserveQuotaRequest) returns (ReserveQuotaResponse);
+  // CommitQuota 提交额度：used += bytes, reserved -= bytes。
+  rpc CommitQuota(CommitQuotaRequest) returns (CommitQuotaResponse);
+  // ReleaseQuota 归还预占额度：reserved -= bytes（上传取消）。
   rpc ReleaseQuota(ReleaseQuotaRequest) returns (ReleaseQuotaResponse);
+  // ReleaseUsedQuota 归还已用额度：used -= bytes（文件删除）。
+  rpc ReleaseUsedQuota(ReleaseUsedQuotaRequest) returns (ReleaseUsedQuotaResponse);
 }
-message LogoutRequest{}
-message LogoutResponse{}
+
 message RegisterRequest {
   string username = 1;
   string password = 2;
@@ -41,6 +46,17 @@ message LoginResponse {
   string access_token = 1;
   string refresh_token = 2;
   int64 expires_at = 3;
+}
+
+message LogoutRequest {
+  int64 user_id = 1;
+  // 为空时撤销该用户全部 refresh token（退出所有设备）。
+  string refresh_token = 2;
+}
+
+message LogoutResponse {
+  bool success = 1;
+  int64 revoked_count = 2;
 }
 
 message RefreshTokenRequest {
@@ -97,6 +113,17 @@ message ReserveQuotaResponse {
   string reason = 3;
 }
 
+message CommitQuotaRequest {
+  int64 user_id = 1;
+  int64 bytes = 2;
+  string request_id = 3;
+}
+
+message CommitQuotaResponse {
+  bool success = 1;
+  string reason = 2;
+}
+
 message ReleaseQuotaRequest {
   int64 user_id = 1;
   int64 release_bytes = 2;
@@ -104,6 +131,17 @@ message ReleaseQuotaRequest {
 }
 
 message ReleaseQuotaResponse {
+  bool success = 1;
+  string reason = 2;
+}
+
+message ReleaseUsedQuotaRequest {
+  int64 user_id = 1;
+  int64 release_bytes = 2;
+  string request_id = 3;
+}
+
+message ReleaseUsedQuotaResponse {
   bool success = 1;
   string reason = 2;
 }

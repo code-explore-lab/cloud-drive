@@ -23,22 +23,50 @@ func NewStorageServer(svcCtx *svc.ServiceContext) *StorageServer {
 	}
 }
 
+// 创建（或幂等返回）一个上传任务。
 func (s *StorageServer) InitUpload(ctx context.Context, in *storage.InitUploadRequest) (*storage.InitUploadResponse, error) {
 	l := logic.NewInitUploadLogic(ctx, s.svcCtx)
 	return l.InitUpload(in)
 }
 
+// 查询上传进度，用于断点续传：返回已完成的分片列表。
+func (s *StorageServer) GetUploadTask(ctx context.Context, in *storage.GetUploadTaskRequest) (*storage.GetUploadTaskResponse, error) {
+	l := logic.NewGetUploadTaskLogic(ctx, s.svcCtx)
+	return l.GetUploadTask(in)
+}
+
+// 记录一个已经写入对象存储的分片。
+func (s *StorageServer) RecordPart(ctx context.Context, in *storage.RecordPartRequest) (*storage.RecordPartResponse, error) {
+	l := logic.NewRecordPartLogic(ctx, s.svcCtx)
+	return l.RecordPart(in)
+}
+
+// 合并分片、校验大小/摘要、落对象元数据。重复调用幂等。
 func (s *StorageServer) CompleteUpload(ctx context.Context, in *storage.CompleteUploadRequest) (*storage.CompleteUploadResponse, error) {
 	l := logic.NewCompleteUploadLogic(ctx, s.svcCtx)
 	return l.CompleteUpload(in)
 }
 
+// 取消上传任务（幂等）。
+func (s *StorageServer) AbortUpload(ctx context.Context, in *storage.AbortUploadRequest) (*storage.AbortUploadResponse, error) {
+	l := logic.NewAbortUploadLogic(ctx, s.svcCtx)
+	return l.AbortUpload(in)
+}
+
+// 删除对象（幂等，失败可由后台任务重试）。
 func (s *StorageServer) DeleteObject(ctx context.Context, in *storage.DeleteObjectRequest) (*storage.DeleteObjectResponse, error) {
 	l := logic.NewDeleteObjectLogic(ctx, s.svcCtx)
 	return l.DeleteObject(in)
 }
 
+// 查询对象元数据，仅 available 的对象对下载方可见。
 func (s *StorageServer) GetObjectInfo(ctx context.Context, in *storage.GetObjectInfoRequest) (*storage.GetObjectInfoResponse, error) {
 	l := logic.NewGetObjectInfoLogic(ctx, s.svcCtx)
 	return l.GetObjectInfo(in)
+}
+
+// 对账：检查对象是否真实存在，可选校验摘要。
+func (s *StorageServer) CheckObject(ctx context.Context, in *storage.CheckObjectRequest) (*storage.CheckObjectResponse, error) {
+	l := logic.NewCheckObjectLogic(ctx, s.svcCtx)
+	return l.CheckObject(in)
 }

@@ -14,34 +14,47 @@ import (
 )
 
 type (
-	GetQuotaRequest       = user.GetQuotaRequest
-	GetQuotaResponse      = user.GetQuotaResponse
-	GetUserRequest        = user.GetUserRequest
-	GetUserResponse       = user.GetUserResponse
-	LoginRequest          = user.LoginRequest
-	LoginResponse         = user.LoginResponse
-	RefreshTokenRequest   = user.RefreshTokenRequest
-	RefreshTokenResponse  = user.RefreshTokenResponse
-	RegisterRequest       = user.RegisterRequest
-	RegisterResponse      = user.RegisterResponse
-	ReleaseQuotaRequest   = user.ReleaseQuotaRequest
-	ReleaseQuotaResponse  = user.ReleaseQuotaResponse
-	ReserveQuotaRequest   = user.ReserveQuotaRequest
-	ReserveQuotaResponse  = user.ReserveQuotaResponse
-	ValidateTokenRequest  = user.ValidateTokenRequest
-	ValidateTokenResponse = user.ValidateTokenResponse
+	CommitQuotaRequest       = user.CommitQuotaRequest
+	CommitQuotaResponse      = user.CommitQuotaResponse
+	GetQuotaRequest          = user.GetQuotaRequest
+	GetQuotaResponse         = user.GetQuotaResponse
+	GetUserRequest           = user.GetUserRequest
+	GetUserResponse          = user.GetUserResponse
+	LoginRequest             = user.LoginRequest
+	LoginResponse            = user.LoginResponse
+	LogoutRequest            = user.LogoutRequest
+	LogoutResponse           = user.LogoutResponse
+	RefreshTokenRequest      = user.RefreshTokenRequest
+	RefreshTokenResponse     = user.RefreshTokenResponse
+	RegisterRequest          = user.RegisterRequest
+	RegisterResponse         = user.RegisterResponse
+	ReleaseQuotaRequest      = user.ReleaseQuotaRequest
+	ReleaseQuotaResponse     = user.ReleaseQuotaResponse
+	ReleaseUsedQuotaRequest  = user.ReleaseUsedQuotaRequest
+	ReleaseUsedQuotaResponse = user.ReleaseUsedQuotaResponse
+	ReserveQuotaRequest      = user.ReserveQuotaRequest
+	ReserveQuotaResponse     = user.ReserveQuotaResponse
+	ValidateTokenRequest     = user.ValidateTokenRequest
+	ValidateTokenResponse    = user.ValidateTokenResponse
 
 	User interface {
 		// ---- 对外：由 user-api 调用 ----
 		Register(ctx context.Context, in *RegisterRequest, opts ...grpc.CallOption) (*RegisterResponse, error)
 		Login(ctx context.Context, in *LoginRequest, opts ...grpc.CallOption) (*LoginResponse, error)
+		Logout(ctx context.Context, in *LogoutRequest, opts ...grpc.CallOption) (*LogoutResponse, error)
 		RefreshToken(ctx context.Context, in *RefreshTokenRequest, opts ...grpc.CallOption) (*RefreshTokenResponse, error)
 		GetUser(ctx context.Context, in *GetUserRequest, opts ...grpc.CallOption) (*GetUserResponse, error)
 		GetQuota(ctx context.Context, in *GetQuotaRequest, opts ...grpc.CallOption) (*GetQuotaResponse, error)
 		// ---- 内部：由 file / storage 服务调用 ----
 		ValidateToken(ctx context.Context, in *ValidateTokenRequest, opts ...grpc.CallOption) (*ValidateTokenResponse, error)
+		// ReserveQuota 预占额度：reserved += bytes。
 		ReserveQuota(ctx context.Context, in *ReserveQuotaRequest, opts ...grpc.CallOption) (*ReserveQuotaResponse, error)
+		// CommitQuota 提交额度：used += bytes, reserved -= bytes。
+		CommitQuota(ctx context.Context, in *CommitQuotaRequest, opts ...grpc.CallOption) (*CommitQuotaResponse, error)
+		// ReleaseQuota 归还预占额度：reserved -= bytes（上传取消）。
 		ReleaseQuota(ctx context.Context, in *ReleaseQuotaRequest, opts ...grpc.CallOption) (*ReleaseQuotaResponse, error)
+		// ReleaseUsedQuota 归还已用额度：used -= bytes（文件删除）。
+		ReleaseUsedQuota(ctx context.Context, in *ReleaseUsedQuotaRequest, opts ...grpc.CallOption) (*ReleaseUsedQuotaResponse, error)
 	}
 
 	defaultUser struct {
@@ -66,6 +79,11 @@ func (m *defaultUser) Login(ctx context.Context, in *LoginRequest, opts ...grpc.
 	return client.Login(ctx, in, opts...)
 }
 
+func (m *defaultUser) Logout(ctx context.Context, in *LogoutRequest, opts ...grpc.CallOption) (*LogoutResponse, error) {
+	client := user.NewUserClient(m.cli.Conn())
+	return client.Logout(ctx, in, opts...)
+}
+
 func (m *defaultUser) RefreshToken(ctx context.Context, in *RefreshTokenRequest, opts ...grpc.CallOption) (*RefreshTokenResponse, error) {
 	client := user.NewUserClient(m.cli.Conn())
 	return client.RefreshToken(ctx, in, opts...)
@@ -87,12 +105,26 @@ func (m *defaultUser) ValidateToken(ctx context.Context, in *ValidateTokenReques
 	return client.ValidateToken(ctx, in, opts...)
 }
 
+// ReserveQuota 预占额度：reserved += bytes。
 func (m *defaultUser) ReserveQuota(ctx context.Context, in *ReserveQuotaRequest, opts ...grpc.CallOption) (*ReserveQuotaResponse, error) {
 	client := user.NewUserClient(m.cli.Conn())
 	return client.ReserveQuota(ctx, in, opts...)
 }
 
+// CommitQuota 提交额度：used += bytes, reserved -= bytes。
+func (m *defaultUser) CommitQuota(ctx context.Context, in *CommitQuotaRequest, opts ...grpc.CallOption) (*CommitQuotaResponse, error) {
+	client := user.NewUserClient(m.cli.Conn())
+	return client.CommitQuota(ctx, in, opts...)
+}
+
+// ReleaseQuota 归还预占额度：reserved -= bytes（上传取消）。
 func (m *defaultUser) ReleaseQuota(ctx context.Context, in *ReleaseQuotaRequest, opts ...grpc.CallOption) (*ReleaseQuotaResponse, error) {
 	client := user.NewUserClient(m.cli.Conn())
 	return client.ReleaseQuota(ctx, in, opts...)
+}
+
+// ReleaseUsedQuota 归还已用额度：used -= bytes（文件删除）。
+func (m *defaultUser) ReleaseUsedQuota(ctx context.Context, in *ReleaseUsedQuotaRequest, opts ...grpc.CallOption) (*ReleaseUsedQuotaResponse, error) {
+	client := user.NewUserClient(m.cli.Conn())
+	return client.ReleaseUsedQuota(ctx, in, opts...)
 }

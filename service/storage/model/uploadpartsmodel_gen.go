@@ -47,10 +47,12 @@ type (
 		UploadId     string    `db:"upload_id"`
 		PartNumber   uint64    `db:"part_number"`
 		Size         uint64    `db:"size"`
+		ContentHash  string    `db:"content_hash"` // SHA-256 of this single part
 		Etag         string    `db:"etag"`
-		ObjectPartId string    `db:"object_part_id"`
-		Status       int64     `db:"status"` // 1=uploaded, 0=invalid
+		ObjectPartId string    `db:"object_part_id"` // Temporary object key of this part
+		Status       int64     `db:"status"`         // 1=uploaded, 0=invalid
 		CreatedAt    time.Time `db:"created_at"`
+		UpdatedAt    time.Time `db:"updated_at"`
 	}
 )
 
@@ -117,8 +119,8 @@ func (m *defaultUploadPartsModel) Insert(ctx context.Context, data *UploadParts)
 	uploadPartsIdKey := fmt.Sprintf("%s%v", cacheUploadPartsIdPrefix, data.Id)
 	uploadPartsUploadIdPartNumberKey := fmt.Sprintf("%s%v:%v", cacheUploadPartsUploadIdPartNumberPrefix, data.UploadId, data.PartNumber)
 	ret, err := m.ExecCtx(ctx, func(ctx context.Context, conn sqlx.SqlConn) (result sql.Result, err error) {
-		query := fmt.Sprintf("insert into %s (%s) values (?, ?, ?, ?, ?, ?)", m.table, uploadPartsRowsExpectAutoSet)
-		return conn.ExecCtx(ctx, query, data.UploadId, data.PartNumber, data.Size, data.Etag, data.ObjectPartId, data.Status)
+		query := fmt.Sprintf("insert into %s (%s) values (?, ?, ?, ?, ?, ?, ?)", m.table, uploadPartsRowsExpectAutoSet)
+		return conn.ExecCtx(ctx, query, data.UploadId, data.PartNumber, data.Size, data.ContentHash, data.Etag, data.ObjectPartId, data.Status)
 	}, uploadPartsIdKey, uploadPartsUploadIdPartNumberKey)
 	return ret, err
 }
@@ -133,7 +135,7 @@ func (m *defaultUploadPartsModel) Update(ctx context.Context, newData *UploadPar
 	uploadPartsUploadIdPartNumberKey := fmt.Sprintf("%s%v:%v", cacheUploadPartsUploadIdPartNumberPrefix, data.UploadId, data.PartNumber)
 	_, err = m.ExecCtx(ctx, func(ctx context.Context, conn sqlx.SqlConn) (result sql.Result, err error) {
 		query := fmt.Sprintf("update %s set %s where `id` = ?", m.table, uploadPartsRowsWithPlaceHolder)
-		return conn.ExecCtx(ctx, query, newData.UploadId, newData.PartNumber, newData.Size, newData.Etag, newData.ObjectPartId, newData.Status, newData.Id)
+		return conn.ExecCtx(ctx, query, newData.UploadId, newData.PartNumber, newData.Size, newData.ContentHash, newData.Etag, newData.ObjectPartId, newData.Status, newData.Id)
 	}, uploadPartsIdKey, uploadPartsUploadIdPartNumberKey)
 	return err
 }

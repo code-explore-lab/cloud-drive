@@ -14,20 +14,41 @@ import (
 )
 
 type (
+	AbortUploadRequest     = storage.AbortUploadRequest
+	AbortUploadResponse    = storage.AbortUploadResponse
+	CheckObjectRequest     = storage.CheckObjectRequest
+	CheckObjectResponse    = storage.CheckObjectResponse
 	CompleteUploadRequest  = storage.CompleteUploadRequest
 	CompleteUploadResponse = storage.CompleteUploadResponse
 	DeleteObjectRequest    = storage.DeleteObjectRequest
 	DeleteObjectResponse   = storage.DeleteObjectResponse
 	GetObjectInfoRequest   = storage.GetObjectInfoRequest
 	GetObjectInfoResponse  = storage.GetObjectInfoResponse
+	GetUploadTaskRequest   = storage.GetUploadTaskRequest
+	GetUploadTaskResponse  = storage.GetUploadTaskResponse
 	InitUploadRequest      = storage.InitUploadRequest
 	InitUploadResponse     = storage.InitUploadResponse
+	RecordPartRequest      = storage.RecordPartRequest
+	RecordPartResponse     = storage.RecordPartResponse
+	UploadPartInfo         = storage.UploadPartInfo
 
 	Storage interface {
+		// 创建（或幂等返回）一个上传任务。
 		InitUpload(ctx context.Context, in *InitUploadRequest, opts ...grpc.CallOption) (*InitUploadResponse, error)
+		// 查询上传进度，用于断点续传：返回已完成的分片列表。
+		GetUploadTask(ctx context.Context, in *GetUploadTaskRequest, opts ...grpc.CallOption) (*GetUploadTaskResponse, error)
+		// 记录一个已经写入对象存储的分片。
+		RecordPart(ctx context.Context, in *RecordPartRequest, opts ...grpc.CallOption) (*RecordPartResponse, error)
+		// 合并分片、校验大小/摘要、落对象元数据。重复调用幂等。
 		CompleteUpload(ctx context.Context, in *CompleteUploadRequest, opts ...grpc.CallOption) (*CompleteUploadResponse, error)
+		// 取消上传任务（幂等）。
+		AbortUpload(ctx context.Context, in *AbortUploadRequest, opts ...grpc.CallOption) (*AbortUploadResponse, error)
+		// 删除对象（幂等，失败可由后台任务重试）。
 		DeleteObject(ctx context.Context, in *DeleteObjectRequest, opts ...grpc.CallOption) (*DeleteObjectResponse, error)
+		// 查询对象元数据，仅 available 的对象对下载方可见。
 		GetObjectInfo(ctx context.Context, in *GetObjectInfoRequest, opts ...grpc.CallOption) (*GetObjectInfoResponse, error)
+		// 对账：检查对象是否真实存在，可选校验摘要。
+		CheckObject(ctx context.Context, in *CheckObjectRequest, opts ...grpc.CallOption) (*CheckObjectResponse, error)
 	}
 
 	defaultStorage struct {
@@ -41,22 +62,50 @@ func NewStorage(cli zrpc.Client) Storage {
 	}
 }
 
+// 创建（或幂等返回）一个上传任务。
 func (m *defaultStorage) InitUpload(ctx context.Context, in *InitUploadRequest, opts ...grpc.CallOption) (*InitUploadResponse, error) {
 	client := storage.NewStorageClient(m.cli.Conn())
 	return client.InitUpload(ctx, in, opts...)
 }
 
+// 查询上传进度，用于断点续传：返回已完成的分片列表。
+func (m *defaultStorage) GetUploadTask(ctx context.Context, in *GetUploadTaskRequest, opts ...grpc.CallOption) (*GetUploadTaskResponse, error) {
+	client := storage.NewStorageClient(m.cli.Conn())
+	return client.GetUploadTask(ctx, in, opts...)
+}
+
+// 记录一个已经写入对象存储的分片。
+func (m *defaultStorage) RecordPart(ctx context.Context, in *RecordPartRequest, opts ...grpc.CallOption) (*RecordPartResponse, error) {
+	client := storage.NewStorageClient(m.cli.Conn())
+	return client.RecordPart(ctx, in, opts...)
+}
+
+// 合并分片、校验大小/摘要、落对象元数据。重复调用幂等。
 func (m *defaultStorage) CompleteUpload(ctx context.Context, in *CompleteUploadRequest, opts ...grpc.CallOption) (*CompleteUploadResponse, error) {
 	client := storage.NewStorageClient(m.cli.Conn())
 	return client.CompleteUpload(ctx, in, opts...)
 }
 
+// 取消上传任务（幂等）。
+func (m *defaultStorage) AbortUpload(ctx context.Context, in *AbortUploadRequest, opts ...grpc.CallOption) (*AbortUploadResponse, error) {
+	client := storage.NewStorageClient(m.cli.Conn())
+	return client.AbortUpload(ctx, in, opts...)
+}
+
+// 删除对象（幂等，失败可由后台任务重试）。
 func (m *defaultStorage) DeleteObject(ctx context.Context, in *DeleteObjectRequest, opts ...grpc.CallOption) (*DeleteObjectResponse, error) {
 	client := storage.NewStorageClient(m.cli.Conn())
 	return client.DeleteObject(ctx, in, opts...)
 }
 
+// 查询对象元数据，仅 available 的对象对下载方可见。
 func (m *defaultStorage) GetObjectInfo(ctx context.Context, in *GetObjectInfoRequest, opts ...grpc.CallOption) (*GetObjectInfoResponse, error) {
 	client := storage.NewStorageClient(m.cli.Conn())
 	return client.GetObjectInfo(ctx, in, opts...)
+}
+
+// 对账：检查对象是否真实存在，可选校验摘要。
+func (m *defaultStorage) CheckObject(ctx context.Context, in *CheckObjectRequest, opts ...grpc.CallOption) (*CheckObjectResponse, error) {
+	client := storage.NewStorageClient(m.cli.Conn())
+	return client.CheckObject(ctx, in, opts...)
 }

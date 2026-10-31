@@ -43,16 +43,20 @@ type (
 	}
 
 	StorageObjects struct {
-		Id          uint64    `db:"id"`
-		ObjectKey   string    `db:"object_key"`
-		Backend     string    `db:"backend"` // minio, s3, local
-		BucketName  string    `db:"bucket_name"`
-		Size        uint64    `db:"size"`
-		ContentType string    `db:"content_type"`
-		ContentHash string    `db:"content_hash"`
-		Status      string    `db:"status"` // uploading, available, deleting, deleted, failed
-		CreatedAt   time.Time `db:"created_at"`
-		UpdatedAt   time.Time `db:"updated_at"`
+		Id           uint64       `db:"id"`
+		ObjectKey    string       `db:"object_key"`
+		Backend      string       `db:"backend"` // minio, s3, local
+		BucketName   string       `db:"bucket_name"`
+		Size         uint64       `db:"size"`
+		ContentType  string       `db:"content_type"`
+		ContentHash  string       `db:"content_hash"`
+		HashVerified int64        `db:"hash_verified"` // 1=digest verified against the uploaded bytes
+		Status       string       `db:"status"`        // uploading, available, deleting, deleted, failed
+		GcAttempts   uint64       `db:"gc_attempts"`
+		LastError    string       `db:"last_error"`
+		DeletedAt    sql.NullTime `db:"deleted_at"`
+		CreatedAt    time.Time    `db:"created_at"`
+		UpdatedAt    time.Time    `db:"updated_at"`
 	}
 )
 
@@ -119,8 +123,8 @@ func (m *defaultStorageObjectsModel) Insert(ctx context.Context, data *StorageOb
 	storageObjectsIdKey := fmt.Sprintf("%s%v", cacheStorageObjectsIdPrefix, data.Id)
 	storageObjectsObjectKeyKey := fmt.Sprintf("%s%v", cacheStorageObjectsObjectKeyPrefix, data.ObjectKey)
 	ret, err := m.ExecCtx(ctx, func(ctx context.Context, conn sqlx.SqlConn) (result sql.Result, err error) {
-		query := fmt.Sprintf("insert into %s (%s) values (?, ?, ?, ?, ?, ?, ?)", m.table, storageObjectsRowsExpectAutoSet)
-		return conn.ExecCtx(ctx, query, data.ObjectKey, data.Backend, data.BucketName, data.Size, data.ContentType, data.ContentHash, data.Status)
+		query := fmt.Sprintf("insert into %s (%s) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", m.table, storageObjectsRowsExpectAutoSet)
+		return conn.ExecCtx(ctx, query, data.ObjectKey, data.Backend, data.BucketName, data.Size, data.ContentType, data.ContentHash, data.HashVerified, data.Status, data.GcAttempts, data.LastError, data.DeletedAt)
 	}, storageObjectsIdKey, storageObjectsObjectKeyKey)
 	return ret, err
 }
@@ -135,7 +139,7 @@ func (m *defaultStorageObjectsModel) Update(ctx context.Context, newData *Storag
 	storageObjectsObjectKeyKey := fmt.Sprintf("%s%v", cacheStorageObjectsObjectKeyPrefix, data.ObjectKey)
 	_, err = m.ExecCtx(ctx, func(ctx context.Context, conn sqlx.SqlConn) (result sql.Result, err error) {
 		query := fmt.Sprintf("update %s set %s where `id` = ?", m.table, storageObjectsRowsWithPlaceHolder)
-		return conn.ExecCtx(ctx, query, newData.ObjectKey, newData.Backend, newData.BucketName, newData.Size, newData.ContentType, newData.ContentHash, newData.Status, newData.Id)
+		return conn.ExecCtx(ctx, query, newData.ObjectKey, newData.Backend, newData.BucketName, newData.Size, newData.ContentType, newData.ContentHash, newData.HashVerified, newData.Status, newData.GcAttempts, newData.LastError, newData.DeletedAt, newData.Id)
 	}, storageObjectsIdKey, storageObjectsObjectKeyKey)
 	return err
 }

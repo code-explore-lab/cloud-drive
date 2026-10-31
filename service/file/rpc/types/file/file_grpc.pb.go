@@ -19,20 +19,48 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	File_GetFile_FullMethodName          = "/file.File/GetFile"
 	File_CreateFile_FullMethodName       = "/file.File/CreateFile"
+	File_GetFile_FullMethodName          = "/file.File/GetFile"
 	File_UpdateFileStatus_FullMethodName = "/file.File/UpdateFileStatus"
+	File_ListFiles_FullMethodName        = "/file.File/ListFiles"
+	File_CreateFolder_FullMethodName     = "/file.File/CreateFolder"
+	File_RenameFile_FullMethodName       = "/file.File/RenameFile"
+	File_MoveFile_FullMethodName         = "/file.File/MoveFile"
 	File_DeleteFile_FullMethodName       = "/file.File/DeleteFile"
+	File_DeleteFolder_FullMethodName     = "/file.File/DeleteFolder"
+	File_CreateShare_FullMethodName      = "/file.File/CreateShare"
+	File_ListShares_FullMethodName       = "/file.File/ListShares"
+	File_RevokeShare_FullMethodName      = "/file.File/RevokeShare"
+	File_AccessShare_FullMethodName      = "/file.File/AccessShare"
+	File_AddVersion_FullMethodName       = "/file.File/AddVersion"
+	File_ListVersions_FullMethodName     = "/file.File/ListVersions"
+	File_RestoreVersion_FullMethodName   = "/file.File/RestoreVersion"
 )
 
 // FileClient is the client API for File service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+//
+// File 是文件服务的控制面：文件/目录元数据、权限校验、分享、版本。
 type FileClient interface {
-	GetFile(ctx context.Context, in *GetFileRequest, opts ...grpc.CallOption) (*GetFileResponse, error)
 	CreateFile(ctx context.Context, in *CreateFileRequest, opts ...grpc.CallOption) (*CreateFileResponse, error)
+	GetFile(ctx context.Context, in *GetFileRequest, opts ...grpc.CallOption) (*GetFileResponse, error)
 	UpdateFileStatus(ctx context.Context, in *UpdateFileStatusRequest, opts ...grpc.CallOption) (*UpdateFileStatusResponse, error)
+	ListFiles(ctx context.Context, in *ListFilesRequest, opts ...grpc.CallOption) (*ListFilesResponse, error)
+	CreateFolder(ctx context.Context, in *CreateFolderRequest, opts ...grpc.CallOption) (*CreateFolderResponse, error)
+	RenameFile(ctx context.Context, in *RenameFileRequest, opts ...grpc.CallOption) (*RenameFileResponse, error)
+	MoveFile(ctx context.Context, in *MoveFileRequest, opts ...grpc.CallOption) (*MoveFileResponse, error)
 	DeleteFile(ctx context.Context, in *DeleteFileRequest, opts ...grpc.CallOption) (*DeleteFileResponse, error)
+	DeleteFolder(ctx context.Context, in *DeleteFolderRequest, opts ...grpc.CallOption) (*DeleteFolderResponse, error)
+	// 分享
+	CreateShare(ctx context.Context, in *CreateShareRequest, opts ...grpc.CallOption) (*CreateShareResponse, error)
+	ListShares(ctx context.Context, in *ListSharesRequest, opts ...grpc.CallOption) (*ListSharesResponse, error)
+	RevokeShare(ctx context.Context, in *RevokeShareRequest, opts ...grpc.CallOption) (*RevokeShareResponse, error)
+	AccessShare(ctx context.Context, in *AccessShareRequest, opts ...grpc.CallOption) (*AccessShareResponse, error)
+	// 版本
+	AddVersion(ctx context.Context, in *AddVersionRequest, opts ...grpc.CallOption) (*AddVersionResponse, error)
+	ListVersions(ctx context.Context, in *ListVersionsRequest, opts ...grpc.CallOption) (*ListVersionsResponse, error)
+	RestoreVersion(ctx context.Context, in *RestoreVersionRequest, opts ...grpc.CallOption) (*RestoreVersionResponse, error)
 }
 
 type fileClient struct {
@@ -43,20 +71,20 @@ func NewFileClient(cc grpc.ClientConnInterface) FileClient {
 	return &fileClient{cc}
 }
 
-func (c *fileClient) GetFile(ctx context.Context, in *GetFileRequest, opts ...grpc.CallOption) (*GetFileResponse, error) {
+func (c *fileClient) CreateFile(ctx context.Context, in *CreateFileRequest, opts ...grpc.CallOption) (*CreateFileResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GetFileResponse)
-	err := c.cc.Invoke(ctx, File_GetFile_FullMethodName, in, out, cOpts...)
+	out := new(CreateFileResponse)
+	err := c.cc.Invoke(ctx, File_CreateFile_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *fileClient) CreateFile(ctx context.Context, in *CreateFileRequest, opts ...grpc.CallOption) (*CreateFileResponse, error) {
+func (c *fileClient) GetFile(ctx context.Context, in *GetFileRequest, opts ...grpc.CallOption) (*GetFileResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(CreateFileResponse)
-	err := c.cc.Invoke(ctx, File_CreateFile_FullMethodName, in, out, cOpts...)
+	out := new(GetFileResponse)
+	err := c.cc.Invoke(ctx, File_GetFile_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -73,6 +101,46 @@ func (c *fileClient) UpdateFileStatus(ctx context.Context, in *UpdateFileStatusR
 	return out, nil
 }
 
+func (c *fileClient) ListFiles(ctx context.Context, in *ListFilesRequest, opts ...grpc.CallOption) (*ListFilesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListFilesResponse)
+	err := c.cc.Invoke(ctx, File_ListFiles_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *fileClient) CreateFolder(ctx context.Context, in *CreateFolderRequest, opts ...grpc.CallOption) (*CreateFolderResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreateFolderResponse)
+	err := c.cc.Invoke(ctx, File_CreateFolder_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *fileClient) RenameFile(ctx context.Context, in *RenameFileRequest, opts ...grpc.CallOption) (*RenameFileResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RenameFileResponse)
+	err := c.cc.Invoke(ctx, File_RenameFile_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *fileClient) MoveFile(ctx context.Context, in *MoveFileRequest, opts ...grpc.CallOption) (*MoveFileResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(MoveFileResponse)
+	err := c.cc.Invoke(ctx, File_MoveFile_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *fileClient) DeleteFile(ctx context.Context, in *DeleteFileRequest, opts ...grpc.CallOption) (*DeleteFileResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(DeleteFileResponse)
@@ -83,14 +151,110 @@ func (c *fileClient) DeleteFile(ctx context.Context, in *DeleteFileRequest, opts
 	return out, nil
 }
 
+func (c *fileClient) DeleteFolder(ctx context.Context, in *DeleteFolderRequest, opts ...grpc.CallOption) (*DeleteFolderResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeleteFolderResponse)
+	err := c.cc.Invoke(ctx, File_DeleteFolder_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *fileClient) CreateShare(ctx context.Context, in *CreateShareRequest, opts ...grpc.CallOption) (*CreateShareResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreateShareResponse)
+	err := c.cc.Invoke(ctx, File_CreateShare_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *fileClient) ListShares(ctx context.Context, in *ListSharesRequest, opts ...grpc.CallOption) (*ListSharesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListSharesResponse)
+	err := c.cc.Invoke(ctx, File_ListShares_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *fileClient) RevokeShare(ctx context.Context, in *RevokeShareRequest, opts ...grpc.CallOption) (*RevokeShareResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RevokeShareResponse)
+	err := c.cc.Invoke(ctx, File_RevokeShare_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *fileClient) AccessShare(ctx context.Context, in *AccessShareRequest, opts ...grpc.CallOption) (*AccessShareResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AccessShareResponse)
+	err := c.cc.Invoke(ctx, File_AccessShare_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *fileClient) AddVersion(ctx context.Context, in *AddVersionRequest, opts ...grpc.CallOption) (*AddVersionResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AddVersionResponse)
+	err := c.cc.Invoke(ctx, File_AddVersion_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *fileClient) ListVersions(ctx context.Context, in *ListVersionsRequest, opts ...grpc.CallOption) (*ListVersionsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListVersionsResponse)
+	err := c.cc.Invoke(ctx, File_ListVersions_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *fileClient) RestoreVersion(ctx context.Context, in *RestoreVersionRequest, opts ...grpc.CallOption) (*RestoreVersionResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RestoreVersionResponse)
+	err := c.cc.Invoke(ctx, File_RestoreVersion_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // FileServer is the server API for File service.
 // All implementations must embed UnimplementedFileServer
 // for forward compatibility.
+//
+// File 是文件服务的控制面：文件/目录元数据、权限校验、分享、版本。
 type FileServer interface {
-	GetFile(context.Context, *GetFileRequest) (*GetFileResponse, error)
 	CreateFile(context.Context, *CreateFileRequest) (*CreateFileResponse, error)
+	GetFile(context.Context, *GetFileRequest) (*GetFileResponse, error)
 	UpdateFileStatus(context.Context, *UpdateFileStatusRequest) (*UpdateFileStatusResponse, error)
+	ListFiles(context.Context, *ListFilesRequest) (*ListFilesResponse, error)
+	CreateFolder(context.Context, *CreateFolderRequest) (*CreateFolderResponse, error)
+	RenameFile(context.Context, *RenameFileRequest) (*RenameFileResponse, error)
+	MoveFile(context.Context, *MoveFileRequest) (*MoveFileResponse, error)
 	DeleteFile(context.Context, *DeleteFileRequest) (*DeleteFileResponse, error)
+	DeleteFolder(context.Context, *DeleteFolderRequest) (*DeleteFolderResponse, error)
+	// 分享
+	CreateShare(context.Context, *CreateShareRequest) (*CreateShareResponse, error)
+	ListShares(context.Context, *ListSharesRequest) (*ListSharesResponse, error)
+	RevokeShare(context.Context, *RevokeShareRequest) (*RevokeShareResponse, error)
+	AccessShare(context.Context, *AccessShareRequest) (*AccessShareResponse, error)
+	// 版本
+	AddVersion(context.Context, *AddVersionRequest) (*AddVersionResponse, error)
+	ListVersions(context.Context, *ListVersionsRequest) (*ListVersionsResponse, error)
+	RestoreVersion(context.Context, *RestoreVersionRequest) (*RestoreVersionResponse, error)
 	mustEmbedUnimplementedFileServer()
 }
 
@@ -101,17 +265,53 @@ type FileServer interface {
 // pointer dereference when methods are called.
 type UnimplementedFileServer struct{}
 
-func (UnimplementedFileServer) GetFile(context.Context, *GetFileRequest) (*GetFileResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method GetFile not implemented")
-}
 func (UnimplementedFileServer) CreateFile(context.Context, *CreateFileRequest) (*CreateFileResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method CreateFile not implemented")
+}
+func (UnimplementedFileServer) GetFile(context.Context, *GetFileRequest) (*GetFileResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetFile not implemented")
 }
 func (UnimplementedFileServer) UpdateFileStatus(context.Context, *UpdateFileStatusRequest) (*UpdateFileStatusResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method UpdateFileStatus not implemented")
 }
+func (UnimplementedFileServer) ListFiles(context.Context, *ListFilesRequest) (*ListFilesResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListFiles not implemented")
+}
+func (UnimplementedFileServer) CreateFolder(context.Context, *CreateFolderRequest) (*CreateFolderResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateFolder not implemented")
+}
+func (UnimplementedFileServer) RenameFile(context.Context, *RenameFileRequest) (*RenameFileResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method RenameFile not implemented")
+}
+func (UnimplementedFileServer) MoveFile(context.Context, *MoveFileRequest) (*MoveFileResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method MoveFile not implemented")
+}
 func (UnimplementedFileServer) DeleteFile(context.Context, *DeleteFileRequest) (*DeleteFileResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method DeleteFile not implemented")
+}
+func (UnimplementedFileServer) DeleteFolder(context.Context, *DeleteFolderRequest) (*DeleteFolderResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method DeleteFolder not implemented")
+}
+func (UnimplementedFileServer) CreateShare(context.Context, *CreateShareRequest) (*CreateShareResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateShare not implemented")
+}
+func (UnimplementedFileServer) ListShares(context.Context, *ListSharesRequest) (*ListSharesResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListShares not implemented")
+}
+func (UnimplementedFileServer) RevokeShare(context.Context, *RevokeShareRequest) (*RevokeShareResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method RevokeShare not implemented")
+}
+func (UnimplementedFileServer) AccessShare(context.Context, *AccessShareRequest) (*AccessShareResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method AccessShare not implemented")
+}
+func (UnimplementedFileServer) AddVersion(context.Context, *AddVersionRequest) (*AddVersionResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method AddVersion not implemented")
+}
+func (UnimplementedFileServer) ListVersions(context.Context, *ListVersionsRequest) (*ListVersionsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListVersions not implemented")
+}
+func (UnimplementedFileServer) RestoreVersion(context.Context, *RestoreVersionRequest) (*RestoreVersionResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method RestoreVersion not implemented")
 }
 func (UnimplementedFileServer) mustEmbedUnimplementedFileServer() {}
 func (UnimplementedFileServer) testEmbeddedByValue()              {}
@@ -134,24 +334,6 @@ func RegisterFileServer(s grpc.ServiceRegistrar, srv FileServer) {
 	s.RegisterService(&File_ServiceDesc, srv)
 }
 
-func _File_GetFile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetFileRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(FileServer).GetFile(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: File_GetFile_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(FileServer).GetFile(ctx, req.(*GetFileRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _File_CreateFile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CreateFileRequest)
 	if err := dec(in); err != nil {
@@ -166,6 +348,24 @@ func _File_CreateFile_Handler(srv interface{}, ctx context.Context, dec func(int
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(FileServer).CreateFile(ctx, req.(*CreateFileRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _File_GetFile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetFileRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(FileServer).GetFile(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: File_GetFile_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(FileServer).GetFile(ctx, req.(*GetFileRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -188,6 +388,78 @@ func _File_UpdateFileStatus_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
+func _File_ListFiles_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListFilesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(FileServer).ListFiles(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: File_ListFiles_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(FileServer).ListFiles(ctx, req.(*ListFilesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _File_CreateFolder_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateFolderRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(FileServer).CreateFolder(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: File_CreateFolder_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(FileServer).CreateFolder(ctx, req.(*CreateFolderRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _File_RenameFile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RenameFileRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(FileServer).RenameFile(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: File_RenameFile_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(FileServer).RenameFile(ctx, req.(*RenameFileRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _File_MoveFile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(MoveFileRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(FileServer).MoveFile(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: File_MoveFile_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(FileServer).MoveFile(ctx, req.(*MoveFileRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _File_DeleteFile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(DeleteFileRequest)
 	if err := dec(in); err != nil {
@@ -206,6 +478,150 @@ func _File_DeleteFile_Handler(srv interface{}, ctx context.Context, dec func(int
 	return interceptor(ctx, in, info, handler)
 }
 
+func _File_DeleteFolder_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteFolderRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(FileServer).DeleteFolder(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: File_DeleteFolder_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(FileServer).DeleteFolder(ctx, req.(*DeleteFolderRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _File_CreateShare_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateShareRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(FileServer).CreateShare(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: File_CreateShare_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(FileServer).CreateShare(ctx, req.(*CreateShareRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _File_ListShares_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListSharesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(FileServer).ListShares(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: File_ListShares_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(FileServer).ListShares(ctx, req.(*ListSharesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _File_RevokeShare_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RevokeShareRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(FileServer).RevokeShare(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: File_RevokeShare_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(FileServer).RevokeShare(ctx, req.(*RevokeShareRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _File_AccessShare_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AccessShareRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(FileServer).AccessShare(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: File_AccessShare_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(FileServer).AccessShare(ctx, req.(*AccessShareRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _File_AddVersion_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AddVersionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(FileServer).AddVersion(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: File_AddVersion_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(FileServer).AddVersion(ctx, req.(*AddVersionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _File_ListVersions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListVersionsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(FileServer).ListVersions(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: File_ListVersions_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(FileServer).ListVersions(ctx, req.(*ListVersionsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _File_RestoreVersion_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RestoreVersionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(FileServer).RestoreVersion(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: File_RestoreVersion_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(FileServer).RestoreVersion(ctx, req.(*RestoreVersionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // File_ServiceDesc is the grpc.ServiceDesc for File service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -214,20 +630,68 @@ var File_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*FileServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "GetFile",
-			Handler:    _File_GetFile_Handler,
-		},
-		{
 			MethodName: "CreateFile",
 			Handler:    _File_CreateFile_Handler,
+		},
+		{
+			MethodName: "GetFile",
+			Handler:    _File_GetFile_Handler,
 		},
 		{
 			MethodName: "UpdateFileStatus",
 			Handler:    _File_UpdateFileStatus_Handler,
 		},
 		{
+			MethodName: "ListFiles",
+			Handler:    _File_ListFiles_Handler,
+		},
+		{
+			MethodName: "CreateFolder",
+			Handler:    _File_CreateFolder_Handler,
+		},
+		{
+			MethodName: "RenameFile",
+			Handler:    _File_RenameFile_Handler,
+		},
+		{
+			MethodName: "MoveFile",
+			Handler:    _File_MoveFile_Handler,
+		},
+		{
 			MethodName: "DeleteFile",
 			Handler:    _File_DeleteFile_Handler,
+		},
+		{
+			MethodName: "DeleteFolder",
+			Handler:    _File_DeleteFolder_Handler,
+		},
+		{
+			MethodName: "CreateShare",
+			Handler:    _File_CreateShare_Handler,
+		},
+		{
+			MethodName: "ListShares",
+			Handler:    _File_ListShares_Handler,
+		},
+		{
+			MethodName: "RevokeShare",
+			Handler:    _File_RevokeShare_Handler,
+		},
+		{
+			MethodName: "AccessShare",
+			Handler:    _File_AccessShare_Handler,
+		},
+		{
+			MethodName: "AddVersion",
+			Handler:    _File_AddVersion_Handler,
+		},
+		{
+			MethodName: "ListVersions",
+			Handler:    _File_ListVersions_Handler,
+		},
+		{
+			MethodName: "RestoreVersion",
+			Handler:    _File_RestoreVersion_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

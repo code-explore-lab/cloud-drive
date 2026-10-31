@@ -5,11 +5,25 @@ package storage;
 
 option go_package = "./storage";
 
+// Storage 是存储服务的控制面：上传任务状态机、分片元数据、对象元数据。
+// 真正的字节流由 storage-api 负责（见 docs/upload-design.md）。
 service Storage {
+  // 创建（或幂等返回）一个上传任务。
   rpc InitUpload(InitUploadRequest) returns (InitUploadResponse);
+  // 查询上传进度，用于断点续传：返回已完成的分片列表。
+  rpc GetUploadTask(GetUploadTaskRequest) returns (GetUploadTaskResponse);
+  // 记录一个已经写入对象存储的分片。
+  rpc RecordPart(RecordPartRequest) returns (RecordPartResponse);
+  // 合并分片、校验大小/摘要、落对象元数据。重复调用幂等。
   rpc CompleteUpload(CompleteUploadRequest) returns (CompleteUploadResponse);
+  // 取消上传任务（幂等）。
+  rpc AbortUpload(AbortUploadRequest) returns (AbortUploadResponse);
+  // 删除对象（幂等，失败可由后台任务重试）。
   rpc DeleteObject(DeleteObjectRequest) returns (DeleteObjectResponse);
+  // 查询对象元数据，仅 available 的对象对下载方可见。
   rpc GetObjectInfo(GetObjectInfoRequest) returns (GetObjectInfoResponse);
+  // 对账：检查对象是否真实存在，可选校验摘要。
+  rpc CheckObject(CheckObjectRequest) returns (CheckObjectResponse);
 }
 
 message InitUploadRequest {
@@ -19,6 +33,7 @@ message InitUploadRequest {
   int64 size = 4;
   string content_type = 5;
   string content_hash = 6;
+  int64 file_id = 7;
 }
 
 message InitUploadResponse {
@@ -26,6 +41,52 @@ message InitUploadResponse {
   int64 chunk_size = 2;
   int64 total_chunks = 3;
   bool success = 4;
+  string object_key = 5;
+  int64 expires_at = 6;
+}
+
+message UploadPartInfo {
+  int32 part_number = 1;
+  int64 size = 2;
+  string etag = 3;
+  string content_hash = 4;
+}
+
+message GetUploadTaskRequest {
+  string upload_id = 1;
+  int64 user_id = 2;
+}
+
+message GetUploadTaskResponse {
+  string upload_id = 1;
+  string status = 2;
+  int64 total_size = 3;
+  int64 chunk_size = 4;
+  int64 total_chunks = 5;
+  int64 uploaded_chunks = 6;
+  int64 uploaded_bytes = 7;
+  repeated UploadPartInfo parts = 8;
+  int64 file_id = 9;
+  string file_name = 10;
+  string content_type = 11;
+  int64 expires_at = 12;
+  string object_key = 13;
+}
+
+message RecordPartRequest {
+  string upload_id = 1;
+  int64 user_id = 2;
+  int32 part_number = 3;
+  int64 size = 4;
+  string etag = 5;
+  string content_hash = 6;
+  string object_part_id = 7;
+}
+
+message RecordPartResponse {
+  bool success = 1;
+  int64 uploaded_chunks = 2;
+  int64 uploaded_bytes = 3;
 }
 
 message CompleteUploadRequest {
@@ -39,6 +100,18 @@ message CompleteUploadResponse {
   int64 size = 2;
   string content_hash = 3;
   bool success = 4;
+  int64 file_id = 5;
+  bool hash_verified = 6;
+}
+
+message AbortUploadRequest {
+  string upload_id = 1;
+  int64 user_id = 2;
+  string request_id = 3;
+}
+
+message AbortUploadResponse {
+  bool success = 1;
 }
 
 message DeleteObjectRequest {
@@ -60,4 +133,16 @@ message GetObjectInfoResponse {
   string content_type = 3;
   string content_hash = 4;
   bool exists = 5;
+}
+
+message CheckObjectRequest {
+  string object_key = 1;
+  string expected_hash = 2;
+}
+
+message CheckObjectResponse {
+  bool exists = 1;
+  int64 size = 2;
+  string content_hash = 3;
+  bool hash_match = 4;
 }

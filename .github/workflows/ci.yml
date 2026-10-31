@@ -1,0 +1,112 @@
+name: CI
+
+# 每次 push / PR 都跑：格式、静态检查、单元测试、构建（Go + 6 个 Docker 镜像）、
+# 以及 docker-compose.yml 的语法校验。
+# 单元测试不依赖 MySQL/Redis/etcd/MinIO，所以 test 任务不启动 service container。
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Check gofmt (excluding vendor)
+        shell: bash
+        run: |
+          unformatted="$(gofmt -l . | grep -v '^vendor/' || true)"
+          if [ -n "$unformatted" ]; then
+            echo "以下文件未通过 gofmt，请执行 gofmt -w <file> 后重新提交："
+            printf '%s\n' "$unformatted"
+            exit 1
+          fi
+
+      - name: Run go vet
+        run: go vet ./...
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      # 单元测试使用 sqlmock 等内存实现，必须不依赖外部基础设施。
+      - name: Run unit tests
+        run: go test ./... -race -count=1
+
+  build:
+    name: Build (${{ matrix.service }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - service: user-api
+            service_dir: ./service/user/api
+          - service: file-api
+            service_dir: ./service/file/api
+          - service: storage-api
+            service_dir: ./service/storage/api
+          - service: user-rpc
+            service_dir: ./service/user/rpc
+          - service: file-rpc
+            service_dir: ./service/file/rpc
+          - service: storage-rpc
+            service_dir: ./service/storage/rpc
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      # go build 只跑一次即可覆盖全部包；Docker 构建才需要按服务矩阵拆分。
+      - name: Compile all packages
+        if: matrix.service == 'user-api'
+        run: go build ./...
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        run: |
+          docker build \
+            --build-arg SERVICE_DIR=${{ matrix.service_dir }} \
+            -t cloud-drive/${{ matrix.service }}:ci \
+            .
+
+  compose-config:
+    name: Validate Compose
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # docker compose config 会解析 compose 文件、.env 展开和挂载路径；
+      # 只做语法/引用校验，不启动任何容器。
+      - name: Validate docker-compose.yml
+        run: docker compose config -q

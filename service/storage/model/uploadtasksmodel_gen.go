@@ -51,11 +51,13 @@ type (
 		TotalSize      uint64        `db:"total_size"`
 		ContentType    string        `db:"content_type"`
 		ExpectedHash   string        `db:"expected_hash"`
-		ObjectKey      string        `db:"object_key"`
+		ObjectKey      string        `db:"object_key"` // Final object key, decided at init time
 		ChunkSize      uint64        `db:"chunk_size"`
 		TotalChunks    uint64        `db:"total_chunks"`
 		UploadedChunks uint64        `db:"uploaded_chunks"`
+		UploadedBytes  uint64        `db:"uploaded_bytes"`
 		Status         string        `db:"status"` // initiated, uploading, completing, completed, failed, aborted
+		LastError      string        `db:"last_error"`
 		ExpiresAt      time.Time     `db:"expires_at"`
 		CreatedAt      time.Time     `db:"created_at"`
 		UpdatedAt      time.Time     `db:"updated_at"`
@@ -125,8 +127,8 @@ func (m *defaultUploadTasksModel) Insert(ctx context.Context, data *UploadTasks)
 	uploadTasksIdKey := fmt.Sprintf("%s%v", cacheUploadTasksIdPrefix, data.Id)
 	uploadTasksUploadIdKey := fmt.Sprintf("%s%v", cacheUploadTasksUploadIdPrefix, data.UploadId)
 	ret, err := m.ExecCtx(ctx, func(ctx context.Context, conn sqlx.SqlConn) (result sql.Result, err error) {
-		query := fmt.Sprintf("insert into %s (%s) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", m.table, uploadTasksRowsExpectAutoSet)
-		return conn.ExecCtx(ctx, query, data.UploadId, data.UserId, data.FileId, data.FileName, data.TotalSize, data.ContentType, data.ExpectedHash, data.ObjectKey, data.ChunkSize, data.TotalChunks, data.UploadedChunks, data.Status, data.ExpiresAt)
+		query := fmt.Sprintf("insert into %s (%s) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", m.table, uploadTasksRowsExpectAutoSet)
+		return conn.ExecCtx(ctx, query, data.UploadId, data.UserId, data.FileId, data.FileName, data.TotalSize, data.ContentType, data.ExpectedHash, data.ObjectKey, data.ChunkSize, data.TotalChunks, data.UploadedChunks, data.UploadedBytes, data.Status, data.LastError, data.ExpiresAt)
 	}, uploadTasksIdKey, uploadTasksUploadIdKey)
 	return ret, err
 }
@@ -141,7 +143,7 @@ func (m *defaultUploadTasksModel) Update(ctx context.Context, newData *UploadTas
 	uploadTasksUploadIdKey := fmt.Sprintf("%s%v", cacheUploadTasksUploadIdPrefix, data.UploadId)
 	_, err = m.ExecCtx(ctx, func(ctx context.Context, conn sqlx.SqlConn) (result sql.Result, err error) {
 		query := fmt.Sprintf("update %s set %s where `id` = ?", m.table, uploadTasksRowsWithPlaceHolder)
-		return conn.ExecCtx(ctx, query, newData.UploadId, newData.UserId, newData.FileId, newData.FileName, newData.TotalSize, newData.ContentType, newData.ExpectedHash, newData.ObjectKey, newData.ChunkSize, newData.TotalChunks, newData.UploadedChunks, newData.Status, newData.ExpiresAt, newData.Id)
+		return conn.ExecCtx(ctx, query, newData.UploadId, newData.UserId, newData.FileId, newData.FileName, newData.TotalSize, newData.ContentType, newData.ExpectedHash, newData.ObjectKey, newData.ChunkSize, newData.TotalChunks, newData.UploadedChunks, newData.UploadedBytes, newData.Status, newData.LastError, newData.ExpiresAt, newData.Id)
 	}, uploadTasksIdKey, uploadTasksUploadIdKey)
 	return err
 }

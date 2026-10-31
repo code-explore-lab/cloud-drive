@@ -6,49 +6,148 @@ package handler
 import (
 	"net/http"
 
+	"cloud-drive/service/file/api/internal/middleware"
 	"cloud-drive/service/file/api/internal/svc"
 
 	"github.com/zeromicro/go-zero/rest"
 )
 
 func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
+	// 存活探针：容器健康检查与 K8s livenessProbe 共用。
 	server.AddRoutes(
 		[]rest.Route{
 			{
 				Method:  http.MethodGet,
+				Path:    "/healthz",
+				Handler: HealthHandler(serverCtx),
+			},
+		},
+	)
+
+	auth := middleware.NewAuthMiddleware(serverCtx)
+
+	// 需要登录的文件与目录接口。
+	server.AddRoutes(
+		rest.WithMiddleware(auth.Handle,
+			rest.Route{
+				Method:  http.MethodGet,
 				Path:    "/v1/files",
 				Handler: ListFilesHandler(serverCtx),
 			},
-			{
-				Method:  http.MethodDelete,
-				Path:    "/v1/files/:fileId",
-				Handler: DeleteFileHandler(serverCtx),
-			},
-			{
+			rest.Route{
 				Method:  http.MethodGet,
 				Path:    "/v1/files/:fileId",
 				Handler: GetFileHandler(serverCtx),
 			},
-			{
+			rest.Route{
+				Method:  http.MethodDelete,
+				Path:    "/v1/files/:fileId",
+				Handler: DeleteFileHandler(serverCtx),
+			},
+			rest.Route{
 				Method:  http.MethodPut,
 				Path:    "/v1/files/:fileId/name",
 				Handler: RenameFileHandler(serverCtx),
 			},
-			{
+			rest.Route{
+				Method:  http.MethodPut,
+				Path:    "/v1/files/:fileId/parent",
+				Handler: MoveFileHandler(serverCtx),
+			},
+			rest.Route{
+				Method:  http.MethodPost,
+				Path:    "/v1/files/:fileId/versions",
+				Handler: InitVersionUploadHandler(serverCtx),
+			},
+			rest.Route{
+				Method:  http.MethodGet,
+				Path:    "/v1/files/:fileId/versions",
+				Handler: ListVersionsHandler(serverCtx),
+			},
+			rest.Route{
+				Method:  http.MethodPost,
+				Path:    "/v1/files/:fileId/versions/:version/restore",
+				Handler: RestoreVersionHandler(serverCtx),
+			},
+			rest.Route{
 				Method:  http.MethodPost,
 				Path:    "/v1/folders",
 				Handler: CreateFolderHandler(serverCtx),
 			},
-			{
+			rest.Route{
+				Method:  http.MethodDelete,
+				Path:    "/v1/folders/:folderId",
+				Handler: DeleteFolderHandler(serverCtx),
+			},
+			rest.Route{
+				Method:  http.MethodPost,
+				Path:    "/v1/shares",
+				Handler: CreateShareHandler(serverCtx),
+			},
+			rest.Route{
+				Method:  http.MethodGet,
+				Path:    "/v1/shares",
+				Handler: ListSharesHandler(serverCtx),
+			},
+			rest.Route{
+				Method:  http.MethodDelete,
+				Path:    "/v1/shares/:shareId",
+				Handler: RevokeShareHandler(serverCtx),
+			},
+			rest.Route{
 				Method:  http.MethodPost,
 				Path:    "/v1/uploads",
 				Handler: InitUploadHandler(serverCtx),
 			},
-			{
+			rest.Route{
+				Method:  http.MethodGet,
+				Path:    "/v1/uploads/:uploadId",
+				Handler: GetUploadProgressHandler(serverCtx),
+			},
+			rest.Route{
+				Method:  http.MethodDelete,
+				Path:    "/v1/uploads/:uploadId",
+				Handler: AbortUploadHandler(serverCtx),
+			},
+			rest.Route{
 				Method:  http.MethodPost,
 				Path:    "/v1/uploads/:uploadId/complete",
 				Handler: CompleteUploadHandler(serverCtx),
 			},
+		),
+	)
+
+	// 文件下载：鉴权后代理到 storage-api 的对象流。
+	// 数据面是长连接，必须关掉 http.TimeoutHandler（它会缓冲整个响应体）。
+	server.AddRoutes(
+		rest.WithMiddleware(auth.Handle,
+			rest.Route{
+				Method:  http.MethodGet,
+				Path:    "/v1/files/:fileId/content",
+				Handler: DownloadFileHandler(serverCtx),
+			},
+		),
+		rest.WithTimeout(0),
+	)
+
+	// 分享相关的公开接口：访问者没有账号，用分享 token + 可选密码鉴权。
+	server.AddRoutes(
+		[]rest.Route{
+			{
+				Method:  http.MethodPost,
+				Path:    "/v1/shares/:token/access",
+				Handler: AccessShareHandler(serverCtx),
+			},
 		},
+	)
+	server.AddRoutes(
+		[]rest.Route{
+			{
+				Method:  http.MethodGet,
+				Path:    "/v1/shares/:token/content",
+				Handler: DownloadSharedFileHandler(serverCtx),
+			},
+		},
+		rest.WithTimeout(0),
 	)
 }

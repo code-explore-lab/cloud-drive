@@ -1,0 +1,9 @@
+# CloudDrive 的独立命名空间。
+# 所有 Kubernetes 资源（ConfigMap/Secret/Service/Deployment/StatefulSet）都放在这里。
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cloud-drive
+  labels:
+    app.kubernetes.io/name: cloud-drive
+    app.kubernetes.io/part-of: cloud-drive

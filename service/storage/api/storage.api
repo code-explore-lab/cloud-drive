@@ -2,53 +2,43 @@ syntax = "v1"
 
 info (
 	title:   "CloudDrive Storage API"
-	desc:    "File object storage HTTP API"
+	desc:    "Storage data plane: chunk upload, upload progress, object download"
 	author:  "CloudDrive"
 	version: "v1"
 )
 
-type InitStorageUploadReq {
-	UploadID    string `json:"uploadId"`
-	UserID      int64  `json:"userId"`
-	FileName    string `json:"fileName"`
+// 数据面的两个流式接口（分片上传、对象下载）需要直接操作 http.ResponseWriter
+// 和请求体，goctl 的 JSON 绑定不适合，因此在 internal/handler/dataplane.go 手写，
+// 由 handler/routes.go 手工注册。其余 JSON 接口走 goctl 生成。
+
+type UploadProgressReq {
+	UploadID string `path:"uploadId"`
+}
+
+type UploadPartState {
+	PartNumber  int64  `json:"partNumber"`
 	Size        int64  `json:"size"`
-	ContentType string `json:"contentType"`
+	ETag        string `json:"etag"`
 	ContentHash string `json:"contentHash"`
 }
 
-type InitStorageUploadResp {
-	UploadID    string `json:"uploadId"`
-	ChunkSize   int64  `json:"chunkSize"`
-	TotalChunks int64  `json:"totalChunks"`
+type UploadProgressResp {
+	UploadID       string            `json:"uploadId"`
+	Status         string            `json:"status"`
+	FileName       string            `json:"fileName"`
+	ContentType    string            `json:"contentType"`
+	TotalSize      int64             `json:"totalSize"`
+	ChunkSize      int64             `json:"chunkSize"`
+	TotalChunks    int64             `json:"totalChunks"`
+	UploadedChunks int64             `json:"uploadedChunks"`
+	UploadedBytes  int64             `json:"uploadedBytes"`
+	MissingParts   []int64           `json:"missingParts"`
+	Parts          []UploadPartState `json:"parts"`
+	ExpiresAt      int64             `json:"expiresAt"`
 }
 
-type UploadPartReq {
-	UploadID   string `path:"uploadId"`
-	PartNumber int64  `path:"partNumber"`
-}
-
-type UploadPartResp {
-	UploadID   string `json:"uploadId"`
-	PartNumber int64  `json:"partNumber"`
-	ETag       string `json:"etag"`
-}
-
-type CompleteStorageUploadReq {
-	UploadID string `json:"uploadId"`
-}
-
-type CompleteStorageUploadResp {
-	UploadID    string `json:"uploadId"`
-	ObjectKey   string `json:"objectKey"`
-	Size        int64  `json:"size"`
-	ContentHash string `json:"contentHash"`
-	Status      string `json:"status"`
-}
-
-type GetStorageObjectResp {
-	ObjectKey   string `json:"objectKey"`
-	Size        int64  `json:"size"`
-	ContentType string `json:"contentType"`
+type AbortUploadReq {
+	UploadID string `path:"uploadId"`
 }
 
 type AbortUploadResp {
@@ -56,19 +46,11 @@ type AbortUploadResp {
 }
 
 service storage-api {
-	@handler InitUpload
-	post /internal/v1/storage/uploads (InitStorageUploadReq) returns (InitStorageUploadResp)
+	// 查询上传进度（断点续传：客户端据此补传 missingParts）。
+	@handler GetUploadProgress
+	get /v1/uploads/:uploadId (UploadProgressReq) returns (UploadProgressResp)
 
-	@handler UploadPart
-	post /internal/v1/storage/uploads/:uploadId/parts/:partNumber (UploadPartReq) returns (UploadPartResp)
-
-	@handler CompleteUpload
-	post /internal/v1/storage/uploads/:uploadId/complete (CompleteStorageUploadReq) returns (CompleteStorageUploadResp)
-
-	@handler GetObject
-	get /internal/v1/storage/objects/:objectKey returns (GetStorageObjectResp)
-
+	// 取消上传任务。
 	@handler AbortUpload
-	delete /internal/v1/storage/uploads/:uploadId returns (AbortUploadResp)
+	delete /v1/uploads/:uploadId (AbortUploadReq) returns (AbortUploadResp)
 }
-

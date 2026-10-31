@@ -6,39 +6,70 @@ package handler
 import (
 	"net/http"
 
+	"cloud-drive/service/storage/api/internal/middleware"
 	"cloud-drive/service/storage/api/internal/svc"
 
 	"github.com/zeromicro/go-zero/rest"
 )
 
 func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
+	// 健康检查：liveness 只看进程，readiness 额外检查对象存储。
 	server.AddRoutes(
 		[]rest.Route{
 			{
 				Method:  http.MethodGet,
-				Path:    "/internal/v1/storage/objects/:objectKey",
-				Handler: GetObjectHandler(serverCtx),
+				Path:    "/healthz",
+				Handler: HealthHandler(serverCtx),
 			},
 			{
-				Method:  http.MethodPost,
-				Path:    "/internal/v1/storage/uploads",
-				Handler: InitUploadHandler(serverCtx),
-			},
-			{
-				Method:  http.MethodDelete,
-				Path:    "/internal/v1/storage/uploads/:uploadId",
-				Handler: AbortUploadHandler(serverCtx),
-			},
-			{
-				Method:  http.MethodPost,
-				Path:    "/internal/v1/storage/uploads/:uploadId/complete",
-				Handler: CompleteUploadHandler(serverCtx),
-			},
-			{
-				Method:  http.MethodPost,
-				Path:    "/internal/v1/storage/uploads/:uploadId/parts/:partNumber",
-				Handler: UploadPartHandler(serverCtx),
+				Method:  http.MethodGet,
+				Path:    "/readyz",
+				Handler: ReadyHandler(serverCtx),
 			},
 		},
+	)
+
+	auth := middleware.NewAuthMiddleware(serverCtx)
+	server.AddRoutes(
+		rest.WithMiddleware(auth.Handle,
+			rest.Route{
+				Method:  http.MethodGet,
+				Path:    "/v1/uploads/:uploadId",
+				Handler: GetUploadProgressHandler(serverCtx),
+			},
+			rest.Route{
+				Method:  http.MethodDelete,
+				Path:    "/v1/uploads/:uploadId",
+				Handler: AbortUploadHandler(serverCtx),
+			},
+		),
+	)
+
+	// 分片上传是流式接口：请求体是原始字节。
+	// 单独关掉超时中间件（WithTimeout(0)），体积上限则用 MaxBytes 精确控制。
+	server.AddRoutes(
+		rest.WithMiddleware(auth.Handle,
+			rest.Route{
+				Method:  http.MethodPut,
+				Path:    "/v1/uploads/:uploadId/parts/:partNumber",
+				Handler: UploadPartHandler(serverCtx),
+			},
+		),
+		rest.WithTimeout(0),
+		rest.WithMaxBytes(serverCtx.Config.MaxChunkBytes+1),
+	)
+
+	// 内部下载接口：只允许持有内部令牌的服务调用（file-api 鉴权后代理到这里）。
+	// http.TimeoutHandler 会缓冲整个响应体，大文件下载必须绕开它。
+	internal := middleware.NewInternalTokenMiddleware(serverCtx.Config.Internal.Token)
+	server.AddRoutes(
+		rest.WithMiddleware(internal.Handle,
+			rest.Route{
+				Method:  http.MethodGet,
+				Path:    "/internal/v1/storage/objects/content",
+				Handler: DownloadObjectHandler(serverCtx),
+			},
+		),
+		rest.WithTimeout(0),
 	)
 }

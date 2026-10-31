@@ -23,14 +23,14 @@ func NewFileServer(svcCtx *svc.ServiceContext) *FileServer {
 	}
 }
 
-func (s *FileServer) GetFile(ctx context.Context, in *file.GetFileRequest) (*file.GetFileResponse, error) {
-	l := logic.NewGetFileLogic(ctx, s.svcCtx)
-	return l.GetFile(in)
-}
-
 func (s *FileServer) CreateFile(ctx context.Context, in *file.CreateFileRequest) (*file.CreateFileResponse, error) {
 	l := logic.NewCreateFileLogic(ctx, s.svcCtx)
 	return l.CreateFile(in)
+}
+
+func (s *FileServer) GetFile(ctx context.Context, in *file.GetFileRequest) (*file.GetFileResponse, error) {
+	l := logic.NewGetFileLogic(ctx, s.svcCtx)
+	return l.GetFile(in)
 }
 
 func (s *FileServer) UpdateFileStatus(ctx context.Context, in *file.UpdateFileStatusRequest) (*file.UpdateFileStatusResponse, error) {
@@ -38,7 +38,69 @@ func (s *FileServer) UpdateFileStatus(ctx context.Context, in *file.UpdateFileSt
 	return l.UpdateFileStatus(in)
 }
 
+func (s *FileServer) ListFiles(ctx context.Context, in *file.ListFilesRequest) (*file.ListFilesResponse, error) {
+	l := logic.NewListFilesLogic(ctx, s.svcCtx)
+	return l.ListFiles(in)
+}
+
+func (s *FileServer) CreateFolder(ctx context.Context, in *file.CreateFolderRequest) (*file.CreateFolderResponse, error) {
+	l := logic.NewCreateFolderLogic(ctx, s.svcCtx)
+	return l.CreateFolder(in)
+}
+
+func (s *FileServer) RenameFile(ctx context.Context, in *file.RenameFileRequest) (*file.RenameFileResponse, error) {
+	l := logic.NewRenameFileLogic(ctx, s.svcCtx)
+	return l.RenameFile(in)
+}
+
+func (s *FileServer) MoveFile(ctx context.Context, in *file.MoveFileRequest) (*file.MoveFileResponse, error) {
+	l := logic.NewMoveFileLogic(ctx, s.svcCtx)
+	return l.MoveFile(in)
+}
+
 func (s *FileServer) DeleteFile(ctx context.Context, in *file.DeleteFileRequest) (*file.DeleteFileResponse, error) {
 	l := logic.NewDeleteFileLogic(ctx, s.svcCtx)
 	return l.DeleteFile(in)
+}
+
+func (s *FileServer) DeleteFolder(ctx context.Context, in *file.DeleteFolderRequest) (*file.DeleteFolderResponse, error) {
+	l := logic.NewDeleteFolderLogic(ctx, s.svcCtx)
+	return l.DeleteFolder(in)
+}
+
+// 分享
+func (s *FileServer) CreateShare(ctx context.Context, in *file.CreateShareRequest) (*file.CreateShareResponse, error) {
+	l := logic.NewCreateShareLogic(ctx, s.svcCtx)
+	return l.CreateShare(in)
+}
+
+func (s *FileServer) ListShares(ctx context.Context, in *file.ListSharesRequest) (*file.ListSharesResponse, error) {
+	l := logic.NewListSharesLogic(ctx, s.svcCtx)
+	return l.ListShares(in)
+}
+
+func (s *FileServer) RevokeShare(ctx context.Context, in *file.RevokeShareRequest) (*file.RevokeShareResponse, error) {
+	l := logic.NewRevokeShareLogic(ctx, s.svcCtx)
+	return l.RevokeShare(in)
+}
+
+func (s *FileServer) AccessShare(ctx context.Context, in *file.AccessShareRequest) (*file.AccessShareResponse, error) {
+	l := logic.NewAccessShareLogic(ctx, s.svcCtx)
+	return l.AccessShare(in)
+}
+
+// 版本
+func (s *FileServer) AddVersion(ctx context.Context, in *file.AddVersionRequest) (*file.AddVersionResponse, error) {
+	l := logic.NewAddVersionLogic(ctx, s.svcCtx)
+	return l.AddVersion(in)
+}
+
+func (s *FileServer) ListVersions(ctx context.Context, in *file.ListVersionsRequest) (*file.ListVersionsResponse, error) {
+	l := logic.NewListVersionsLogic(ctx, s.svcCtx)
+	return l.ListVersions(in)
+}
+
+func (s *FileServer) RestoreVersion(ctx context.Context, in *file.RestoreVersionRequest) (*file.RestoreVersionResponse, error) {
+	l := logic.NewRestoreVersionLogic(ctx, s.svcCtx)
+	return l.RestoreVersion(in)
 }

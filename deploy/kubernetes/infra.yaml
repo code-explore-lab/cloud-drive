@@ -1,0 +1,645 @@
+# ============================================================================
+# CloudDrive 本地/演示用基础设施：MySQL、Redis、etcd、MinIO
+# ============================================================================
+# 注意：
+#   - 这些都是**单节点** StatefulSet，只适合开发、演示或 CI 集群。
+#   - 生产环境请使用云托管 MySQL / Redis / etcd / 对象存储（或至少使用带备份、
+#     多副本和监控的 Operator），不要把这里的 StatefulSet 当作生产方案。
+#   - PVC 使用集群默认 StorageClass；容量和 storageClassName 请按环境调整。
+#   - MySQL 的三份 schema 只在数据目录为空的首次初始化时执行。
+# ============================================================================
+
+# ---------------------------------------------------------------------------
+# MySQL 初始化 SQL：从 service/*/model/*.sql 原样嵌入。
+# 挂载到 /docker-entrypoint-initdb.d，MySQL 首次启动时按文件名顺序执行。
+# 改动 SQL 后需要删除 PVC 重新初始化，或手工执行迁移。
+# ---------------------------------------------------------------------------
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cloud-drive-mysql-init
+  namespace: cloud-drive
+  labels:
+    app.kubernetes.io/name: mysql
+    app.kubernetes.io/part-of: cloud-drive
+data:
+  01-user.sql: |
+    CREATE TABLE IF NOT EXISTS `users` (
+        `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+        `username` VARCHAR(32) NOT NULL,
+        `email` VARCHAR(255) DEFAULT NULL,
+        `password_hash` VARCHAR(255) NOT NULL,
+        `status` TINYINT NOT NULL DEFAULT 1 COMMENT '1=active, 0=disabled',
+        `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        `deleted_at` DATETIME DEFAULT NULL,
+        PRIMARY KEY (`id`),
+        UNIQUE KEY `uk_users_username` (`username`),
+        UNIQUE KEY `uk_users_email` (`email`),
+        KEY `idx_users_status` (`status`),
+        KEY `idx_users_deleted_at` (`deleted_at`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+    CREATE TABLE IF NOT EXISTS `user_quotas` (
+        `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+        `user_id` BIGINT UNSIGNED NOT NULL,
+        `total_bytes` BIGINT UNSIGNED NOT NULL DEFAULT 10737418240 COMMENT 'Default 10 GiB',
+        `used_bytes` BIGINT UNSIGNED NOT NULL DEFAULT 0,
+        `reserved_bytes` BIGINT UNSIGNED NOT NULL DEFAULT 0,
+        `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        PRIMARY KEY (`id`),
+        UNIQUE KEY `uk_user_quotas_user_id` (`user_id`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+    CREATE TABLE IF NOT EXISTS `refresh_tokens` (
+        `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+        `user_id` BIGINT UNSIGNED NOT NULL,
+        `token_hash` VARCHAR(255) NOT NULL COMMENT 'Store token hash, not plaintext token',
+        `expires_at` DATETIME NOT NULL,
+        `revoked_at` DATETIME DEFAULT NULL,
+        `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (`id`),
+        UNIQUE KEY `uk_refresh_tokens_hash` (`token_hash`),
+        KEY `idx_refresh_tokens_user_id` (`user_id`),
+        KEY `idx_refresh_tokens_expires_at` (`expires_at`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+  02-file.sql: |
+    CREATE TABLE IF NOT EXISTS `folders` (
+        `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+        `owner_id` BIGINT UNSIGNED NOT NULL,
+        `parent_id` BIGINT UNSIGNED NOT NULL DEFAULT 0 COMMENT '0=root directory',
+        `name` VARCHAR(255) NOT NULL,
+        `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        `deleted_at` DATETIME DEFAULT NULL,
+        PRIMARY KEY (`id`),
+        KEY `idx_folders_owner_parent` (`owner_id`, `parent_id`),
+        KEY `idx_folders_owner_deleted` (`owner_id`, `deleted_at`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+    CREATE TABLE IF NOT EXISTS `files` (
+        `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+        `owner_id` BIGINT UNSIGNED NOT NULL,
+        `parent_id` BIGINT UNSIGNED NOT NULL DEFAULT 0 COMMENT 'Parent folder ID; 0=root',
+        `name` VARCHAR(255) NOT NULL,
+        `size` BIGINT UNSIGNED NOT NULL DEFAULT 0 COMMENT 'Size of the current version',
+        `content_type` VARCHAR(255) NOT NULL DEFAULT 'application/octet-stream',
+        `content_hash` CHAR(64) NOT NULL DEFAULT '' COMMENT 'SHA-256 hex digest of the current version',
+        `object_key` VARCHAR(512) NOT NULL DEFAULT '',
+        `version` INT UNSIGNED NOT NULL DEFAULT 1 COMMENT 'Current version number',
+        `status` VARCHAR(20) NOT NULL DEFAULT 'pending' COMMENT 'pending, uploading, processing, available, failed, deleting',
+        `request_id` VARCHAR(64) DEFAULT NULL COMMENT 'Idempotency key of the create-upload request',
+        `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        `deleted_at` DATETIME DEFAULT NULL,
+        PRIMARY KEY (`id`),
+        UNIQUE KEY `uk_files_owner_request` (`owner_id`, `request_id`),
+        KEY `idx_files_owner_parent` (`owner_id`, `parent_id`),
+        KEY `idx_files_owner_status` (`owner_id`, `status`),
+        KEY `idx_files_owner_updated` (`owner_id`, `updated_at`),
+        KEY `idx_files_content_hash` (`content_hash`),
+        KEY `idx_files_object_key` (`object_key`(191))
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+    CREATE TABLE IF NOT EXISTS `file_versions` (
+        `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+        `file_id` BIGINT UNSIGNED NOT NULL,
+        `owner_id` BIGINT UNSIGNED NOT NULL,
+        `version` INT UNSIGNED NOT NULL DEFAULT 1,
+        `size` BIGINT UNSIGNED NOT NULL DEFAULT 0,
+        `content_type` VARCHAR(255) NOT NULL DEFAULT 'application/octet-stream',
+        `content_hash` CHAR(64) NOT NULL DEFAULT '',
+        `object_key` VARCHAR(512) NOT NULL,
+        `request_id` VARCHAR(64) DEFAULT NULL COMMENT 'Idempotency key, e.g. the upload id',
+        `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (`id`),
+        UNIQUE KEY `uk_file_versions_file_version` (`file_id`, `version`),
+        UNIQUE KEY `uk_file_versions_file_request` (`file_id`, `request_id`),
+        KEY `idx_file_versions_owner` (`owner_id`),
+        KEY `idx_file_versions_object_key` (`object_key`(191))
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+    CREATE TABLE IF NOT EXISTS `shares` (
+        `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+        `file_id` BIGINT UNSIGNED NOT NULL,
+        `owner_id` BIGINT UNSIGNED NOT NULL,
+        `token_hash` CHAR(64) NOT NULL,
+        `password_hash` VARCHAR(255) DEFAULT NULL,
+        `expires_at` DATETIME DEFAULT NULL,
+        `max_access_count` INT UNSIGNED DEFAULT NULL,
+        `access_count` INT UNSIGNED NOT NULL DEFAULT 0,
+        `last_access_at` DATETIME DEFAULT NULL,
+        `status` TINYINT NOT NULL DEFAULT 1 COMMENT '1=active, 0=disabled',
+        `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        PRIMARY KEY (`id`),
+        UNIQUE KEY `uk_shares_token_hash` (`token_hash`),
+        KEY `idx_shares_file_owner` (`file_id`, `owner_id`),
+        KEY `idx_shares_expires_at` (`expires_at`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+  03-storage.sql: |
+    CREATE TABLE IF NOT EXISTS `upload_tasks` (
+        `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+        `upload_id` VARCHAR(64) NOT NULL,
+        `user_id` BIGINT UNSIGNED NOT NULL,
+        `file_id` BIGINT UNSIGNED DEFAULT NULL,
+        `file_name` VARCHAR(255) NOT NULL,
+        `total_size` BIGINT UNSIGNED NOT NULL,
+        `content_type` VARCHAR(255) NOT NULL DEFAULT 'application/octet-stream',
+        `expected_hash` CHAR(64) NOT NULL DEFAULT '',
+        `object_key` VARCHAR(512) NOT NULL DEFAULT '' COMMENT 'Final object key, decided at init time',
+        `chunk_size` BIGINT UNSIGNED NOT NULL,
+        `total_chunks` INT UNSIGNED NOT NULL,
+        `uploaded_chunks` INT UNSIGNED NOT NULL DEFAULT 0,
+        `uploaded_bytes` BIGINT UNSIGNED NOT NULL DEFAULT 0,
+        `status` VARCHAR(20) NOT NULL DEFAULT 'initiated' COMMENT 'initiated, uploading, completing, completed, failed, aborted',
+        `last_error` VARCHAR(512) NOT NULL DEFAULT '',
+        `expires_at` DATETIME NOT NULL,
+        `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        PRIMARY KEY (`id`),
+        UNIQUE KEY `uk_upload_tasks_upload_id` (`upload_id`),
+        KEY `idx_upload_tasks_user_status` (`user_id`, `status`),
+        KEY `idx_upload_tasks_expires_at` (`expires_at`),
+        KEY `idx_upload_tasks_file_id` (`file_id`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+    CREATE TABLE IF NOT EXISTS `upload_parts` (
+        `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+        `upload_id` VARCHAR(64) NOT NULL,
+        `part_number` INT UNSIGNED NOT NULL,
+        `size` BIGINT UNSIGNED NOT NULL,
+        `content_hash` CHAR(64) NOT NULL DEFAULT '' COMMENT 'SHA-256 of this single part',
+        `etag` VARCHAR(255) NOT NULL DEFAULT '',
+        `object_part_id` VARCHAR(512) NOT NULL DEFAULT '' COMMENT 'Temporary object key of this part',
+        `status` TINYINT NOT NULL DEFAULT 1 COMMENT '1=uploaded, 0=invalid',
+        `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        PRIMARY KEY (`id`),
+        UNIQUE KEY `uk_upload_parts_upload_part` (`upload_id`, `part_number`),
+        KEY `idx_upload_parts_status` (`upload_id`, `status`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+    CREATE TABLE IF NOT EXISTS `storage_objects` (
+        `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+        `object_key` VARCHAR(512) NOT NULL,
+        `backend` VARCHAR(32) NOT NULL DEFAULT 'minio' COMMENT 'minio, s3, local',
+        `bucket_name` VARCHAR(255) NOT NULL DEFAULT '',
+        `size` BIGINT UNSIGNED NOT NULL DEFAULT 0,
+        `content_type` VARCHAR(255) NOT NULL DEFAULT 'application/octet-stream',
+        `content_hash` CHAR(64) NOT NULL DEFAULT '',
+        `hash_verified` TINYINT NOT NULL DEFAULT 0 COMMENT '1=digest verified against the uploaded bytes',
+        `status` VARCHAR(20) NOT NULL DEFAULT 'available' COMMENT 'uploading, available, deleting, deleted, failed',
+        `gc_attempts` INT UNSIGNED NOT NULL DEFAULT 0,
+        `last_error` VARCHAR(512) NOT NULL DEFAULT '',
+        `deleted_at` DATETIME DEFAULT NULL,
+        `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        PRIMARY KEY (`id`),
+        UNIQUE KEY `uk_storage_objects_object_key` (`object_key`(191)),
+        KEY `idx_storage_objects_hash` (`content_hash`),
+        KEY `idx_storage_objects_status` (`status`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+# ---------------------------------------------------------------------------
+# Services
+# ---------------------------------------------------------------------------
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql
+  namespace: cloud-drive
+  labels:
+    app.kubernetes.io/name: mysql
+    app.kubernetes.io/part-of: cloud-drive
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: mysql
+  ports:
+    - name: mysql
+      port: 3306
+      targetPort: mysql
+      protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+  namespace: cloud-drive
+  labels:
+    app.kubernetes.io/name: redis
+    app.kubernetes.io/part-of: cloud-drive
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: redis
+  ports:
+    - name: redis
+      port: 6379
+      targetPort: redis
+      protocol: TCP
+---
+# etcd 使用 headless Service：客户端通过 DNS 直接拿到 Pod IP。
+# publishNotReadyAddresses 让 etcd 在自身尚未 ready 时也能解析 etcd:2379/2380，
+# 否则单节点 etcd 用 etcd:2380 作为 initial-cluster 时可能启动失败。
+apiVersion: v1
+kind: Service
+metadata:
+  name: etcd
+  namespace: cloud-drive
+  labels:
+    app.kubernetes.io/name: etcd
+    app.kubernetes.io/part-of: cloud-drive
+spec:
+  type: ClusterIP
+  clusterIP: None
+  publishNotReadyAddresses: true
+  selector:
+    app.kubernetes.io/name: etcd
+  ports:
+    - name: client
+      port: 2379
+      targetPort: client
+      protocol: TCP
+    - name: peer
+      port: 2380
+      targetPort: peer
+      protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: minio
+  namespace: cloud-drive
+  labels:
+    app.kubernetes.io/name: minio
+    app.kubernetes.io/part-of: cloud-drive
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: minio
+  ports:
+    - name: api
+      port: 9000
+      targetPort: api
+      protocol: TCP
+    - name: console
+      port: 9001
+      targetPort: console
+      protocol: TCP
+
+# ---------------------------------------------------------------------------
+# MySQL
+# ---------------------------------------------------------------------------
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mysql
+  namespace: cloud-drive
+  labels:
+    app.kubernetes.io/name: mysql
+    app.kubernetes.io/part-of: cloud-drive
+spec:
+  serviceName: mysql
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: mysql
+      app.kubernetes.io/part-of: cloud-drive
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: mysql
+        app.kubernetes.io/part-of: cloud-drive
+    spec:
+      containers:
+        - name: mysql
+          image: mysql:8.0
+          imagePullPolicy: IfNotPresent
+          args:
+            - --character-set-server=utf8mb4
+            - --collation-server=utf8mb4_unicode_ci
+            - --default-time-zone=+08:00
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: cloud-drive-secret
+                  key: MYSQL_ROOT_PASSWORD
+            - name: MYSQL_DATABASE
+              value: cloud-drive
+            - name: TZ
+              value: Asia/Shanghai
+          ports:
+            - name: mysql
+              containerPort: 3306
+              protocol: TCP
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/mysql
+            - name: initdb
+              mountPath: /docker-entrypoint-initdb.d
+              readOnly: true
+          # 使用 TCP 连接校验：初始化阶段的临时实例只监听 socket，
+          # 因此能等到三份 SQL 执行完再变成 Ready。
+          readinessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - mysql -h127.0.0.1 -uroot -p"$MYSQL_ROOT_PASSWORD" -e 'SELECT 1' >/dev/null 2>&1
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+          livenessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - mysql -h127.0.0.1 -uroot -p"$MYSQL_ROOT_PASSWORD" -e 'SELECT 1' >/dev/null 2>&1
+            initialDelaySeconds: 60
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 6
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+      volumes:
+        - name: initdb
+          configMap:
+            name: cloud-drive-mysql-init
+            defaultMode: 0444
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 20Gi
+
+# ---------------------------------------------------------------------------
+# Redis
+# ---------------------------------------------------------------------------
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: redis
+  namespace: cloud-drive
+  labels:
+    app.kubernetes.io/name: redis
+    app.kubernetes.io/part-of: cloud-drive
+spec:
+  serviceName: redis
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: redis
+      app.kubernetes.io/part-of: cloud-drive
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: redis
+        app.kubernetes.io/part-of: cloud-drive
+    spec:
+      containers:
+        - name: redis
+          image: redis:7-alpine
+          imagePullPolicy: IfNotPresent
+          command:
+            - redis-server
+            - --appendonly
+            - "yes"
+          ports:
+            - name: redis
+              containerPort: 6379
+              protocol: TCP
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          readinessProbe:
+            exec:
+              command:
+                - redis-cli
+                - ping
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          livenessProbe:
+            exec:
+              command:
+                - redis-cli
+                - ping
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            timeoutSeconds: 3
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 5Gi
+
+# ---------------------------------------------------------------------------
+# etcd（单节点，参数与 docker-compose.yml 保持一致）
+# ---------------------------------------------------------------------------
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: etcd
+  namespace: cloud-drive
+  labels:
+    app.kubernetes.io/name: etcd
+    app.kubernetes.io/part-of: cloud-drive
+spec:
+  serviceName: etcd
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: etcd
+      app.kubernetes.io/part-of: cloud-drive
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: etcd
+        app.kubernetes.io/part-of: cloud-drive
+    spec:
+      containers:
+        - name: etcd
+          image: quay.io/coreos/etcd:v3.5.21
+          imagePullPolicy: IfNotPresent
+          command:
+            - /usr/local/bin/etcd
+            - --name=etcd0
+            - --data-dir=/etcd-data
+            - --listen-client-urls=http://0.0.0.0:2379
+            - --advertise-client-urls=http://etcd:2379
+            - --listen-peer-urls=http://0.0.0.0:2380
+            - --initial-advertise-peer-urls=http://etcd:2380
+            - --initial-cluster=etcd0=http://etcd:2380
+            - --initial-cluster-state=new
+          ports:
+            - name: client
+              containerPort: 2379
+              protocol: TCP
+            - name: peer
+              containerPort: 2380
+              protocol: TCP
+          volumeMounts:
+            - name: data
+              mountPath: /etcd-data
+          readinessProbe:
+            exec:
+              command:
+                - etcdctl
+                - endpoint
+                - health
+                - --endpoints=http://127.0.0.1:2379
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            exec:
+              command:
+                - etcdctl
+                - endpoint
+                - health
+                - --endpoints=http://127.0.0.1:2379
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 5Gi
+
+# ---------------------------------------------------------------------------
+# MinIO
+# 使用 Secret 中的 MINIO_ACCESS_KEY / MINIO_SECRET_KEY 作为 root 凭据，
+# 与 6 个 Go 服务的 MinIO 配置保持一致。
+# ---------------------------------------------------------------------------
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: minio
+  namespace: cloud-drive
+  labels:
+    app.kubernetes.io/name: minio
+    app.kubernetes.io/part-of: cloud-drive
+spec:
+  serviceName: minio
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: minio
+      app.kubernetes.io/part-of: cloud-drive
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: minio
+        app.kubernetes.io/part-of: cloud-drive
+    spec:
+      containers:
+        - name: minio
+          image: minio/minio:latest
+          imagePullPolicy: IfNotPresent
+          # 保留镜像 entrypoint，把 compose 里的 command 放到 args。
+          args:
+            - server
+            - /data
+            - --console-address
+            - ":9001"
+          env:
+            - name: MINIO_ROOT_USER
+              valueFrom:
+                secretKeyRef:
+                  name: cloud-drive-secret
+                  key: MINIO_ACCESS_KEY
+            - name: MINIO_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: cloud-drive-secret
+                  key: MINIO_SECRET_KEY
+          ports:
+            - name: api
+              containerPort: 9000
+              protocol: TCP
+            - name: console
+              containerPort: 9001
+              protocol: TCP
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          readinessProbe:
+            httpGet:
+              path: /minio/health/ready
+              port: api
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+          livenessProbe:
+            httpGet:
+              path: /minio/health/live
+              port: api
+            initialDelaySeconds: 30
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 6
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 50Gi

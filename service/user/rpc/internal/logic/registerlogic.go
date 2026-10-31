@@ -87,5 +87,11 @@ func (l *RegisterLogic) Register(in *user.RegisterRequest) (*user.RegisterRespon
 		return nil, status.Error(codes.Internal, "internal error")
 	}
 
+	// 事务里的 INSERT 绕过了 model，缓存里还留着上面预检查写入的
+	// "用户名/邮箱不存在"占位符，必须显式失效，否则紧接着的登录会失败。
+	if err := l.svcCtx.UsersModel.Invalidate(l.ctx, userId, username, email); err != nil {
+		l.Errorf("invalidate user cache failed: %v", err)
+	}
+
 	return &user.RegisterResponse{UserId: int64(userId), Username: username}, nil
 }

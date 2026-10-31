@@ -24,13 +24,15 @@ var (
 	filesRowsExpectAutoSet   = strings.Join(stringx.Remove(filesFieldNames, "`id`", "`create_at`", "`create_time`", "`created_at`", "`update_at`", "`update_time`", "`updated_at`"), ",")
 	filesRowsWithPlaceHolder = strings.Join(stringx.Remove(filesFieldNames, "`id`", "`create_at`", "`create_time`", "`created_at`", "`update_at`", "`update_time`", "`updated_at`"), "=?,") + "=?"
 
-	cacheFilesIdPrefix = "cache:files:id:"
+	cacheFilesIdPrefix               = "cache:files:id:"
+	cacheFilesOwnerIdRequestIdPrefix = "cache:files:ownerId:requestId:"
 )
 
 type (
 	filesModel interface {
 		Insert(ctx context.Context, data *Files) (sql.Result, error)
 		FindOne(ctx context.Context, id uint64) (*Files, error)
+		FindOneByOwnerIdRequestId(ctx context.Context, ownerId uint64, requestId sql.NullString) (*Files, error)
 		Update(ctx context.Context, data *Files) error
 		Delete(ctx context.Context, id uint64) error
 	}
@@ -41,18 +43,20 @@ type (
 	}
 
 	Files struct {
-		Id          uint64       `db:"id"`
-		OwnerId     uint64       `db:"owner_id"`
-		ParentId    uint64       `db:"parent_id"` // Parent folder ID; 0=root
-		Name        string       `db:"name"`
-		Size        uint64       `db:"size"`
-		ContentType string       `db:"content_type"`
-		ContentHash string       `db:"content_hash"` // SHA-256 hex digest
-		ObjectKey   string       `db:"object_key"`
-		Status      string       `db:"status"` // pending, uploading, processing, available, failed, deleting
-		CreatedAt   time.Time    `db:"created_at"`
-		UpdatedAt   time.Time    `db:"updated_at"`
-		DeletedAt   sql.NullTime `db:"deleted_at"`
+		Id          uint64         `db:"id"`
+		OwnerId     uint64         `db:"owner_id"`
+		ParentId    uint64         `db:"parent_id"` // Parent folder ID; 0=root
+		Name        string         `db:"name"`
+		Size        uint64         `db:"size"` // Size of the current version
+		ContentType string         `db:"content_type"`
+		ContentHash string         `db:"content_hash"` // SHA-256 hex digest of the current version
+		ObjectKey   string         `db:"object_key"`
+		Version     uint64         `db:"version"`    // Current version number
+		Status      string         `db:"status"`     // pending, uploading, processing, available, failed, deleting
+		RequestId   sql.NullString `db:"request_id"` // Idempotency key of the create-upload request
+		CreatedAt   time.Time      `db:"created_at"`
+		UpdatedAt   time.Time      `db:"updated_at"`
+		DeletedAt   sql.NullTime   `db:"deleted_at"`
 	}
 )
 
@@ -64,11 +68,17 @@ func newFilesModel(conn sqlx.SqlConn, c cache.CacheConf, opts ...cache.Option) *
 }
 
 func (m *defaultFilesModel) Delete(ctx context.Context, id uint64) error {
+	data, err := m.FindOne(ctx, id)
+	if err != nil {
+		return err
+	}
+
 	filesIdKey := fmt.Sprintf("%s%v", cacheFilesIdPrefix, id)
-	_, err := m.ExecCtx(ctx, func(ctx context.Context, conn sqlx.SqlConn) (result sql.Result, err error) {
+	filesOwnerIdRequestIdKey := fmt.Sprintf("%s%v:%v", cacheFilesOwnerIdRequestIdPrefix, data.OwnerId, data.RequestId)
+	_, err = m.ExecCtx(ctx, func(ctx context.Context, conn sqlx.SqlConn) (result sql.Result, err error) {
 		query := fmt.Sprintf("delete from %s where `id` = ?", m.table)
 		return conn.ExecCtx(ctx, query, id)
-	}, filesIdKey)
+	}, filesIdKey, filesOwnerIdRequestIdKey)
 	return err
 }
 
@@ -89,21 +99,48 @@ func (m *defaultFilesModel) FindOne(ctx context.Context, id uint64) (*Files, err
 	}
 }
 
+func (m *defaultFilesModel) FindOneByOwnerIdRequestId(ctx context.Context, ownerId uint64, requestId sql.NullString) (*Files, error) {
+	filesOwnerIdRequestIdKey := fmt.Sprintf("%s%v:%v", cacheFilesOwnerIdRequestIdPrefix, ownerId, requestId)
+	var resp Files
+	err := m.QueryRowIndexCtx(ctx, &resp, filesOwnerIdRequestIdKey, m.formatPrimary, func(ctx context.Context, conn sqlx.SqlConn, v any) (i any, e error) {
+		query := fmt.Sprintf("select %s from %s where `owner_id` = ? and `request_id` = ? limit 1", filesRows, m.table)
+		if err := conn.QueryRowCtx(ctx, &resp, query, ownerId, requestId); err != nil {
+			return nil, err
+		}
+		return resp.Id, nil
+	}, m.queryPrimary)
+	switch err {
+	case nil:
+		return &resp, nil
+	case sqlc.ErrNotFound:
+		return nil, ErrNotFound
+	default:
+		return nil, err
+	}
+}
+
 func (m *defaultFilesModel) Insert(ctx context.Context, data *Files) (sql.Result, error) {
 	filesIdKey := fmt.Sprintf("%s%v", cacheFilesIdPrefix, data.Id)
+	filesOwnerIdRequestIdKey := fmt.Sprintf("%s%v:%v", cacheFilesOwnerIdRequestIdPrefix, data.OwnerId, data.RequestId)
 	ret, err := m.ExecCtx(ctx, func(ctx context.Context, conn sqlx.SqlConn) (result sql.Result, err error) {
-		query := fmt.Sprintf("insert into %s (%s) values (?, ?, ?, ?, ?, ?, ?, ?, ?)", m.table, filesRowsExpectAutoSet)
-		return conn.ExecCtx(ctx, query, data.OwnerId, data.ParentId, data.Name, data.Size, data.ContentType, data.ContentHash, data.ObjectKey, data.Status, data.DeletedAt)
-	}, filesIdKey)
+		query := fmt.Sprintf("insert into %s (%s) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", m.table, filesRowsExpectAutoSet)
+		return conn.ExecCtx(ctx, query, data.OwnerId, data.ParentId, data.Name, data.Size, data.ContentType, data.ContentHash, data.ObjectKey, data.Version, data.Status, data.RequestId, data.DeletedAt)
+	}, filesIdKey, filesOwnerIdRequestIdKey)
 	return ret, err
 }
 
-func (m *defaultFilesModel) Update(ctx context.Context, data *Files) error {
+func (m *defaultFilesModel) Update(ctx context.Context, newData *Files) error {
+	data, err := m.FindOne(ctx, newData.Id)
+	if err != nil {
+		return err
+	}
+
 	filesIdKey := fmt.Sprintf("%s%v", cacheFilesIdPrefix, data.Id)
-	_, err := m.ExecCtx(ctx, func(ctx context.Context, conn sqlx.SqlConn) (result sql.Result, err error) {
+	filesOwnerIdRequestIdKey := fmt.Sprintf("%s%v:%v", cacheFilesOwnerIdRequestIdPrefix, data.OwnerId, data.RequestId)
+	_, err = m.ExecCtx(ctx, func(ctx context.Context, conn sqlx.SqlConn) (result sql.Result, err error) {
 		query := fmt.Sprintf("update %s set %s where `id` = ?", m.table, filesRowsWithPlaceHolder)
-		return conn.ExecCtx(ctx, query, data.OwnerId, data.ParentId, data.Name, data.Size, data.ContentType, data.ContentHash, data.ObjectKey, data.Status, data.DeletedAt, data.Id)
-	}, filesIdKey)
+		return conn.ExecCtx(ctx, query, newData.OwnerId, newData.ParentId, newData.Name, newData.Size, newData.ContentType, newData.ContentHash, newData.ObjectKey, newData.Version, newData.Status, newData.RequestId, newData.DeletedAt, newData.Id)
+	}, filesIdKey, filesOwnerIdRequestIdKey)
 	return err
 }
 

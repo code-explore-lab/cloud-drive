@@ -20,19 +20,38 @@ const _ = grpc.SupportPackageIsVersion9
 
 const (
 	Storage_InitUpload_FullMethodName     = "/storage.Storage/InitUpload"
+	Storage_GetUploadTask_FullMethodName  = "/storage.Storage/GetUploadTask"
+	Storage_RecordPart_FullMethodName     = "/storage.Storage/RecordPart"
 	Storage_CompleteUpload_FullMethodName = "/storage.Storage/CompleteUpload"
+	Storage_AbortUpload_FullMethodName    = "/storage.Storage/AbortUpload"
 	Storage_DeleteObject_FullMethodName   = "/storage.Storage/DeleteObject"
 	Storage_GetObjectInfo_FullMethodName  = "/storage.Storage/GetObjectInfo"
+	Storage_CheckObject_FullMethodName    = "/storage.Storage/CheckObject"
 )
 
 // StorageClient is the client API for Storage service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+//
+// Storage 是存储服务的控制面：上传任务状态机、分片元数据、对象元数据。
+// 真正的字节流由 storage-api 负责（见 docs/upload-design.md）。
 type StorageClient interface {
+	// 创建（或幂等返回）一个上传任务。
 	InitUpload(ctx context.Context, in *InitUploadRequest, opts ...grpc.CallOption) (*InitUploadResponse, error)
+	// 查询上传进度，用于断点续传：返回已完成的分片列表。
+	GetUploadTask(ctx context.Context, in *GetUploadTaskRequest, opts ...grpc.CallOption) (*GetUploadTaskResponse, error)
+	// 记录一个已经写入对象存储的分片。
+	RecordPart(ctx context.Context, in *RecordPartRequest, opts ...grpc.CallOption) (*RecordPartResponse, error)
+	// 合并分片、校验大小/摘要、落对象元数据。重复调用幂等。
 	CompleteUpload(ctx context.Context, in *CompleteUploadRequest, opts ...grpc.CallOption) (*CompleteUploadResponse, error)
+	// 取消上传任务（幂等）。
+	AbortUpload(ctx context.Context, in *AbortUploadRequest, opts ...grpc.CallOption) (*AbortUploadResponse, error)
+	// 删除对象（幂等，失败可由后台任务重试）。
 	DeleteObject(ctx context.Context, in *DeleteObjectRequest, opts ...grpc.CallOption) (*DeleteObjectResponse, error)
+	// 查询对象元数据，仅 available 的对象对下载方可见。
 	GetObjectInfo(ctx context.Context, in *GetObjectInfoRequest, opts ...grpc.CallOption) (*GetObjectInfoResponse, error)
+	// 对账：检查对象是否真实存在，可选校验摘要。
+	CheckObject(ctx context.Context, in *CheckObjectRequest, opts ...grpc.CallOption) (*CheckObjectResponse, error)
 }
 
 type storageClient struct {
@@ -53,10 +72,40 @@ func (c *storageClient) InitUpload(ctx context.Context, in *InitUploadRequest, o
 	return out, nil
 }
 
+func (c *storageClient) GetUploadTask(ctx context.Context, in *GetUploadTaskRequest, opts ...grpc.CallOption) (*GetUploadTaskResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetUploadTaskResponse)
+	err := c.cc.Invoke(ctx, Storage_GetUploadTask_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *storageClient) RecordPart(ctx context.Context, in *RecordPartRequest, opts ...grpc.CallOption) (*RecordPartResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RecordPartResponse)
+	err := c.cc.Invoke(ctx, Storage_RecordPart_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *storageClient) CompleteUpload(ctx context.Context, in *CompleteUploadRequest, opts ...grpc.CallOption) (*CompleteUploadResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(CompleteUploadResponse)
 	err := c.cc.Invoke(ctx, Storage_CompleteUpload_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *storageClient) AbortUpload(ctx context.Context, in *AbortUploadRequest, opts ...grpc.CallOption) (*AbortUploadResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AbortUploadResponse)
+	err := c.cc.Invoke(ctx, Storage_AbortUpload_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -83,14 +132,39 @@ func (c *storageClient) GetObjectInfo(ctx context.Context, in *GetObjectInfoRequ
 	return out, nil
 }
 
+func (c *storageClient) CheckObject(ctx context.Context, in *CheckObjectRequest, opts ...grpc.CallOption) (*CheckObjectResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CheckObjectResponse)
+	err := c.cc.Invoke(ctx, Storage_CheckObject_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // StorageServer is the server API for Storage service.
 // All implementations must embed UnimplementedStorageServer
 // for forward compatibility.
+//
+// Storage 是存储服务的控制面：上传任务状态机、分片元数据、对象元数据。
+// 真正的字节流由 storage-api 负责（见 docs/upload-design.md）。
 type StorageServer interface {
+	// 创建（或幂等返回）一个上传任务。
 	InitUpload(context.Context, *InitUploadRequest) (*InitUploadResponse, error)
+	// 查询上传进度，用于断点续传：返回已完成的分片列表。
+	GetUploadTask(context.Context, *GetUploadTaskRequest) (*GetUploadTaskResponse, error)
+	// 记录一个已经写入对象存储的分片。
+	RecordPart(context.Context, *RecordPartRequest) (*RecordPartResponse, error)
+	// 合并分片、校验大小/摘要、落对象元数据。重复调用幂等。
 	CompleteUpload(context.Context, *CompleteUploadRequest) (*CompleteUploadResponse, error)
+	// 取消上传任务（幂等）。
+	AbortUpload(context.Context, *AbortUploadRequest) (*AbortUploadResponse, error)
+	// 删除对象（幂等，失败可由后台任务重试）。
 	DeleteObject(context.Context, *DeleteObjectRequest) (*DeleteObjectResponse, error)
+	// 查询对象元数据，仅 available 的对象对下载方可见。
 	GetObjectInfo(context.Context, *GetObjectInfoRequest) (*GetObjectInfoResponse, error)
+	// 对账：检查对象是否真实存在，可选校验摘要。
+	CheckObject(context.Context, *CheckObjectRequest) (*CheckObjectResponse, error)
 	mustEmbedUnimplementedStorageServer()
 }
 
@@ -104,14 +178,26 @@ type UnimplementedStorageServer struct{}
 func (UnimplementedStorageServer) InitUpload(context.Context, *InitUploadRequest) (*InitUploadResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method InitUpload not implemented")
 }
+func (UnimplementedStorageServer) GetUploadTask(context.Context, *GetUploadTaskRequest) (*GetUploadTaskResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetUploadTask not implemented")
+}
+func (UnimplementedStorageServer) RecordPart(context.Context, *RecordPartRequest) (*RecordPartResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method RecordPart not implemented")
+}
 func (UnimplementedStorageServer) CompleteUpload(context.Context, *CompleteUploadRequest) (*CompleteUploadResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method CompleteUpload not implemented")
+}
+func (UnimplementedStorageServer) AbortUpload(context.Context, *AbortUploadRequest) (*AbortUploadResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method AbortUpload not implemented")
 }
 func (UnimplementedStorageServer) DeleteObject(context.Context, *DeleteObjectRequest) (*DeleteObjectResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method DeleteObject not implemented")
 }
 func (UnimplementedStorageServer) GetObjectInfo(context.Context, *GetObjectInfoRequest) (*GetObjectInfoResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetObjectInfo not implemented")
+}
+func (UnimplementedStorageServer) CheckObject(context.Context, *CheckObjectRequest) (*CheckObjectResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method CheckObject not implemented")
 }
 func (UnimplementedStorageServer) mustEmbedUnimplementedStorageServer() {}
 func (UnimplementedStorageServer) testEmbeddedByValue()                 {}
@@ -152,6 +238,42 @@ func _Storage_InitUpload_Handler(srv interface{}, ctx context.Context, dec func(
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Storage_GetUploadTask_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetUploadTaskRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(StorageServer).GetUploadTask(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Storage_GetUploadTask_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(StorageServer).GetUploadTask(ctx, req.(*GetUploadTaskRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Storage_RecordPart_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RecordPartRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(StorageServer).RecordPart(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Storage_RecordPart_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(StorageServer).RecordPart(ctx, req.(*RecordPartRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Storage_CompleteUpload_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CompleteUploadRequest)
 	if err := dec(in); err != nil {
@@ -166,6 +288,24 @@ func _Storage_CompleteUpload_Handler(srv interface{}, ctx context.Context, dec f
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(StorageServer).CompleteUpload(ctx, req.(*CompleteUploadRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Storage_AbortUpload_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AbortUploadRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(StorageServer).AbortUpload(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Storage_AbortUpload_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(StorageServer).AbortUpload(ctx, req.(*AbortUploadRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -206,6 +346,24 @@ func _Storage_GetObjectInfo_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Storage_CheckObject_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CheckObjectRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(StorageServer).CheckObject(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Storage_CheckObject_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(StorageServer).CheckObject(ctx, req.(*CheckObjectRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Storage_ServiceDesc is the grpc.ServiceDesc for Storage service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -218,8 +376,20 @@ var Storage_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Storage_InitUpload_Handler,
 		},
 		{
+			MethodName: "GetUploadTask",
+			Handler:    _Storage_GetUploadTask_Handler,
+		},
+		{
+			MethodName: "RecordPart",
+			Handler:    _Storage_RecordPart_Handler,
+		},
+		{
 			MethodName: "CompleteUpload",
 			Handler:    _Storage_CompleteUpload_Handler,
+		},
+		{
+			MethodName: "AbortUpload",
+			Handler:    _Storage_AbortUpload_Handler,
 		},
 		{
 			MethodName: "DeleteObject",
@@ -228,6 +398,10 @@ var Storage_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetObjectInfo",
 			Handler:    _Storage_GetObjectInfo_Handler,
+		},
+		{
+			MethodName: "CheckObject",
+			Handler:    _Storage_CheckObject_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

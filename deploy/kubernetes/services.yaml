@@ -1,0 +1,732 @@
+# ============================================================================
+# CloudDrive 六个 Go 服务的 Deployment + Service
+# ============================================================================
+# 约定：
+#   - API 服务：user-api:8000 / file-api:8001 / storage-api:8002
+#     readiness/liveness 走 HTTP；storage-api 的 readiness 额外检查 MinIO bucket，
+#     因此用 /readyz，liveness 仍用 /healthz。
+#   - RPC 服务：user-rpc:9000 / file-rpc:9001 / storage-rpc:9002
+#     探针使用 TCP socket；服务发现走 etcd，Service 仅用于调试和端口转发。
+#   - 配置通过 cloud-drive-config 的 subPath 挂到 /app/etc/config.yaml；
+#     敏感变量通过 Secret cloud-drive-secret 以 envFrom 注入。
+#   - 镜像名是占位符（cloud-drive/<service>:latest）。生产请替换成实际 registry 和
+#     不可变 tag（如 Git SHA），不要长期使用 latest。
+# ============================================================================
+
+# ---------------------------------------------------------------------------
+# API Services
+# ---------------------------------------------------------------------------
+apiVersion: v1
+kind: Service
+metadata:
+  name: user-api
+  namespace: cloud-drive
+  labels:
+    app.kubernetes.io/name: user-api
+    app.kubernetes.io/part-of: cloud-drive
+    app.kubernetes.io/component: api
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: user-api
+  ports:
+    - name: http
+      port: 8000
+      targetPort: http
+      protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: file-api
+  namespace: cloud-drive
+  labels:
+    app.kubernetes.io/name: file-api
+    app.kubernetes.io/part-of: cloud-drive
+    app.kubernetes.io/component: api
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: file-api
+  ports:
+    - name: http
+      port: 8001
+      targetPort: http
+      protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: storage-api
+  namespace: cloud-drive
+  labels:
+    app.kubernetes.io/name: storage-api
+    app.kubernetes.io/part-of: cloud-drive
+    app.kubernetes.io/component: api
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: storage-api
+  ports:
+    - name: http
+      port: 8002
+      targetPort: http
+      protocol: TCP
+
+# ---------------------------------------------------------------------------
+# RPC Services（etcd 才是真正的服务发现来源，这里只用于排障）
+# ---------------------------------------------------------------------------
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: user-rpc
+  namespace: cloud-drive
+  labels:
+    app.kubernetes.io/name: user-rpc
+    app.kubernetes.io/part-of: cloud-drive
+    app.kubernetes.io/component: rpc
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: user-rpc
+  ports:
+    - name: rpc
+      port: 9000
+      targetPort: rpc
+      protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: file-rpc
+  namespace: cloud-drive
+  labels:
+    app.kubernetes.io/name: file-rpc
+    app.kubernetes.io/part-of: cloud-drive
+    app.kubernetes.io/component: rpc
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: file-rpc
+  ports:
+    - name: rpc
+      port: 9001
+      targetPort: rpc
+      protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: storage-rpc
+  namespace: cloud-drive
+  labels:
+    app.kubernetes.io/name: storage-rpc
+    app.kubernetes.io/part-of: cloud-drive
+    app.kubernetes.io/component: rpc
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: storage-rpc
+  ports:
+    - name: rpc
+      port: 9002
+      targetPort: rpc
+      protocol: TCP
+
+# ===========================================================================
+# API Deployments
+# ===========================================================================
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: user-api
+  namespace: cloud-drive
+  labels:
+    app.kubernetes.io/name: user-api
+    app.kubernetes.io/part-of: cloud-drive
+    app.kubernetes.io/component: api
+spec:
+  replicas: 2
+  revisionHistoryLimit: 3
+  progressDeadlineSeconds: 600
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: user-api
+      app.kubernetes.io/part-of: cloud-drive
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: user-api
+        app.kubernetes.io/part-of: cloud-drive
+        app.kubernetes.io/component: api
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: user-api
+          image: cloud-drive/user-api:latest
+          imagePullPolicy: IfNotPresent
+          args: ["-f", "/app/etc/config.yaml"]
+          ports:
+            - name: http
+              containerPort: 8000
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: cloud-drive-env
+            - secretRef:
+                name: cloud-drive-secret
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            timeoutSeconds: 3
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: config
+              mountPath: /app/etc/config.yaml
+              subPath: user-api.yaml
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: config
+          configMap:
+            name: cloud-drive-config
+            defaultMode: 0444
+            items:
+              - key: user-api.yaml
+                path: user-api.yaml
+        - name: tmp
+          emptyDir: {}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: file-api
+  namespace: cloud-drive
+  labels:
+    app.kubernetes.io/name: file-api
+    app.kubernetes.io/part-of: cloud-drive
+    app.kubernetes.io/component: api
+spec:
+  replicas: 2
+  revisionHistoryLimit: 3
+  progressDeadlineSeconds: 600
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: file-api
+      app.kubernetes.io/part-of: cloud-drive
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: file-api
+        app.kubernetes.io/part-of: cloud-drive
+        app.kubernetes.io/component: api
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: file-api
+          image: cloud-drive/file-api:latest
+          imagePullPolicy: IfNotPresent
+          args: ["-f", "/app/etc/config.yaml"]
+          ports:
+            - name: http
+              containerPort: 8001
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: cloud-drive-env
+            - secretRef:
+                name: cloud-drive-secret
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            timeoutSeconds: 3
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: config
+              mountPath: /app/etc/config.yaml
+              subPath: file-api.yaml
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: config
+          configMap:
+            name: cloud-drive-config
+            defaultMode: 0444
+            items:
+              - key: file-api.yaml
+                path: file-api.yaml
+        - name: tmp
+          emptyDir: {}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: storage-api
+  namespace: cloud-drive
+  labels:
+    app.kubernetes.io/name: storage-api
+    app.kubernetes.io/part-of: cloud-drive
+    app.kubernetes.io/component: api
+spec:
+  replicas: 2
+  revisionHistoryLimit: 3
+  progressDeadlineSeconds: 600
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: storage-api
+      app.kubernetes.io/part-of: cloud-drive
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: storage-api
+        app.kubernetes.io/part-of: cloud-drive
+        app.kubernetes.io/component: api
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: storage-api
+          image: cloud-drive/storage-api:latest
+          imagePullPolicy: IfNotPresent
+          args: ["-f", "/app/etc/config.yaml"]
+          ports:
+            - name: http
+              containerPort: 8002
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: cloud-drive-env
+            - secretRef:
+                name: cloud-drive-secret
+          # /readyz 会检查 MinIO bucket 是否可用；bucket 尚未创建时不接流量。
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            timeoutSeconds: 3
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: config
+              mountPath: /app/etc/config.yaml
+              subPath: storage-api.yaml
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: config
+          configMap:
+            name: cloud-drive-config
+            defaultMode: 0444
+            items:
+              - key: storage-api.yaml
+                path: storage-api.yaml
+        - name: tmp
+          emptyDir: {}
+
+# ===========================================================================
+# RPC Deployments
+# ===========================================================================
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: user-rpc
+  namespace: cloud-drive
+  labels:
+    app.kubernetes.io/name: user-rpc
+    app.kubernetes.io/part-of: cloud-drive
+    app.kubernetes.io/component: rpc
+spec:
+  replicas: 2
+  revisionHistoryLimit: 3
+  progressDeadlineSeconds: 600
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: user-rpc
+      app.kubernetes.io/part-of: cloud-drive
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: user-rpc
+        app.kubernetes.io/part-of: cloud-drive
+        app.kubernetes.io/component: rpc
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: user-rpc
+          image: cloud-drive/user-rpc:latest
+          imagePullPolicy: IfNotPresent
+          args: ["-f", "/app/etc/config.yaml"]
+          ports:
+            - name: rpc
+              containerPort: 9000
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: cloud-drive-env
+            - secretRef:
+                name: cloud-drive-secret
+          readinessProbe:
+            tcpSocket:
+              port: rpc
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          livenessProbe:
+            tcpSocket:
+              port: rpc
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            timeoutSeconds: 3
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 200m
+              memory: 256Mi
+            limits:
+              cpu: 1000m
+              memory: 1Gi
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: config
+              mountPath: /app/etc/config.yaml
+              subPath: user.rpc.yaml
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: config
+          configMap:
+            name: cloud-drive-config
+            defaultMode: 0444
+            items:
+              - key: user.rpc.yaml
+                path: user.rpc.yaml
+        - name: tmp
+          emptyDir: {}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: file-rpc
+  namespace: cloud-drive
+  labels:
+    app.kubernetes.io/name: file-rpc
+    app.kubernetes.io/part-of: cloud-drive
+    app.kubernetes.io/component: rpc
+spec:
+  replicas: 2
+  revisionHistoryLimit: 3
+  progressDeadlineSeconds: 600
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: file-rpc
+      app.kubernetes.io/part-of: cloud-drive
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: file-rpc
+        app.kubernetes.io/part-of: cloud-drive
+        app.kubernetes.io/component: rpc
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: file-rpc
+          image: cloud-drive/file-rpc:latest
+          imagePullPolicy: IfNotPresent
+          args: ["-f", "/app/etc/config.yaml"]
+          ports:
+            - name: rpc
+              containerPort: 9001
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: cloud-drive-env
+            - secretRef:
+                name: cloud-drive-secret
+          readinessProbe:
+            tcpSocket:
+              port: rpc
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          livenessProbe:
+            tcpSocket:
+              port: rpc
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            timeoutSeconds: 3
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 200m
+              memory: 256Mi
+            limits:
+              cpu: 1000m
+              memory: 1Gi
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: config
+              mountPath: /app/etc/config.yaml
+              subPath: file.rpc.yaml
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: config
+          configMap:
+            name: cloud-drive-config
+            defaultMode: 0444
+            items:
+              - key: file.rpc.yaml
+                path: file.rpc.yaml
+        - name: tmp
+          emptyDir: {}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: storage-rpc
+  namespace: cloud-drive
+  labels:
+    app.kubernetes.io/name: storage-rpc
+    app.kubernetes.io/part-of: cloud-drive
+    app.kubernetes.io/component: rpc
+spec:
+  replicas: 2
+  revisionHistoryLimit: 3
+  progressDeadlineSeconds: 600
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: storage-rpc
+      app.kubernetes.io/part-of: cloud-drive
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: storage-rpc
+        app.kubernetes.io/part-of: cloud-drive
+        app.kubernetes.io/component: rpc
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: storage-rpc
+          image: cloud-drive/storage-rpc:latest
+          imagePullPolicy: IfNotPresent
+          args: ["-f", "/app/etc/config.yaml"]
+          ports:
+            - name: rpc
+              containerPort: 9002
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: cloud-drive-env
+            - secretRef:
+                name: cloud-drive-secret
+          readinessProbe:
+            tcpSocket:
+              port: rpc
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          livenessProbe:
+            tcpSocket:
+              port: rpc
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            timeoutSeconds: 3
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 200m
+              memory: 256Mi
+            limits:
+              cpu: 1000m
+              memory: 1Gi
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: config
+              mountPath: /app/etc/config.yaml
+              subPath: storage.rpc.yaml
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: config
+          configMap:
+            name: cloud-drive-config
+            defaultMode: 0444
+            items:
+              - key: storage.rpc.yaml
+                path: storage.rpc.yaml
+        - name: tmp
+          emptyDir: {}

@@ -24,14 +24,16 @@ var (
 	fileVersionsRowsExpectAutoSet   = strings.Join(stringx.Remove(fileVersionsFieldNames, "`id`", "`create_at`", "`create_time`", "`created_at`", "`update_at`", "`update_time`", "`updated_at`"), ",")
 	fileVersionsRowsWithPlaceHolder = strings.Join(stringx.Remove(fileVersionsFieldNames, "`id`", "`create_at`", "`create_time`", "`created_at`", "`update_at`", "`update_time`", "`updated_at`"), "=?,") + "=?"
 
-	cacheFileVersionsIdPrefix            = "cache:fileVersions:id:"
-	cacheFileVersionsFileIdVersionPrefix = "cache:fileVersions:fileId:version:"
+	cacheFileVersionsIdPrefix              = "cache:fileVersions:id:"
+	cacheFileVersionsFileIdRequestIdPrefix = "cache:fileVersions:fileId:requestId:"
+	cacheFileVersionsFileIdVersionPrefix   = "cache:fileVersions:fileId:version:"
 )
 
 type (
 	fileVersionsModel interface {
 		Insert(ctx context.Context, data *FileVersions) (sql.Result, error)
 		FindOne(ctx context.Context, id uint64) (*FileVersions, error)
+		FindOneByFileIdRequestId(ctx context.Context, fileId uint64, requestId sql.NullString) (*FileVersions, error)
 		FindOneByFileIdVersion(ctx context.Context, fileId uint64, version uint64) (*FileVersions, error)
 		Update(ctx context.Context, data *FileVersions) error
 		Delete(ctx context.Context, id uint64) error
@@ -43,14 +45,16 @@ type (
 	}
 
 	FileVersions struct {
-		Id          uint64    `db:"id"`
-		FileId      uint64    `db:"file_id"`
-		OwnerId     uint64    `db:"owner_id"`
-		Version     uint64    `db:"version"`
-		Size        uint64    `db:"size"`
-		ContentHash string    `db:"content_hash"`
-		ObjectKey   string    `db:"object_key"`
-		CreatedAt   time.Time `db:"created_at"`
+		Id          uint64         `db:"id"`
+		FileId      uint64         `db:"file_id"`
+		OwnerId     uint64         `db:"owner_id"`
+		Version     uint64         `db:"version"`
+		Size        uint64         `db:"size"`
+		ContentType string         `db:"content_type"`
+		ContentHash string         `db:"content_hash"`
+		ObjectKey   string         `db:"object_key"`
+		RequestId   sql.NullString `db:"request_id"` // Idempotency key, e.g. the upload id
+		CreatedAt   time.Time      `db:"created_at"`
 	}
 )
 
@@ -67,12 +71,13 @@ func (m *defaultFileVersionsModel) Delete(ctx context.Context, id uint64) error 
 		return err
 	}
 
+	fileVersionsFileIdRequestIdKey := fmt.Sprintf("%s%v:%v", cacheFileVersionsFileIdRequestIdPrefix, data.FileId, data.RequestId)
 	fileVersionsFileIdVersionKey := fmt.Sprintf("%s%v:%v", cacheFileVersionsFileIdVersionPrefix, data.FileId, data.Version)
 	fileVersionsIdKey := fmt.Sprintf("%s%v", cacheFileVersionsIdPrefix, id)
 	_, err = m.ExecCtx(ctx, func(ctx context.Context, conn sqlx.SqlConn) (result sql.Result, err error) {
 		query := fmt.Sprintf("delete from %s where `id` = ?", m.table)
 		return conn.ExecCtx(ctx, query, id)
-	}, fileVersionsFileIdVersionKey, fileVersionsIdKey)
+	}, fileVersionsFileIdRequestIdKey, fileVersionsFileIdVersionKey, fileVersionsIdKey)
 	return err
 }
 
@@ -83,6 +88,26 @@ func (m *defaultFileVersionsModel) FindOne(ctx context.Context, id uint64) (*Fil
 		query := fmt.Sprintf("select %s from %s where `id` = ? limit 1", fileVersionsRows, m.table)
 		return conn.QueryRowCtx(ctx, v, query, id)
 	})
+	switch err {
+	case nil:
+		return &resp, nil
+	case sqlc.ErrNotFound:
+		return nil, ErrNotFound
+	default:
+		return nil, err
+	}
+}
+
+func (m *defaultFileVersionsModel) FindOneByFileIdRequestId(ctx context.Context, fileId uint64, requestId sql.NullString) (*FileVersions, error) {
+	fileVersionsFileIdRequestIdKey := fmt.Sprintf("%s%v:%v", cacheFileVersionsFileIdRequestIdPrefix, fileId, requestId)
+	var resp FileVersions
+	err := m.QueryRowIndexCtx(ctx, &resp, fileVersionsFileIdRequestIdKey, m.formatPrimary, func(ctx context.Context, conn sqlx.SqlConn, v any) (i any, e error) {
+		query := fmt.Sprintf("select %s from %s where `file_id` = ? and `request_id` = ? limit 1", fileVersionsRows, m.table)
+		if err := conn.QueryRowCtx(ctx, &resp, query, fileId, requestId); err != nil {
+			return nil, err
+		}
+		return resp.Id, nil
+	}, m.queryPrimary)
 	switch err {
 	case nil:
 		return &resp, nil
@@ -114,12 +139,13 @@ func (m *defaultFileVersionsModel) FindOneByFileIdVersion(ctx context.Context, f
 }
 
 func (m *defaultFileVersionsModel) Insert(ctx context.Context, data *FileVersions) (sql.Result, error) {
+	fileVersionsFileIdRequestIdKey := fmt.Sprintf("%s%v:%v", cacheFileVersionsFileIdRequestIdPrefix, data.FileId, data.RequestId)
 	fileVersionsFileIdVersionKey := fmt.Sprintf("%s%v:%v", cacheFileVersionsFileIdVersionPrefix, data.FileId, data.Version)
 	fileVersionsIdKey := fmt.Sprintf("%s%v", cacheFileVersionsIdPrefix, data.Id)
 	ret, err := m.ExecCtx(ctx, func(ctx context.Context, conn sqlx.SqlConn) (result sql.Result, err error) {
-		query := fmt.Sprintf("insert into %s (%s) values (?, ?, ?, ?, ?, ?)", m.table, fileVersionsRowsExpectAutoSet)
-		return conn.ExecCtx(ctx, query, data.FileId, data.OwnerId, data.Version, data.Size, data.ContentHash, data.ObjectKey)
-	}, fileVersionsFileIdVersionKey, fileVersionsIdKey)
+		query := fmt.Sprintf("insert into %s (%s) values (?, ?, ?, ?, ?, ?, ?, ?)", m.table, fileVersionsRowsExpectAutoSet)
+		return conn.ExecCtx(ctx, query, data.FileId, data.OwnerId, data.Version, data.Size, data.ContentType, data.ContentHash, data.ObjectKey, data.RequestId)
+	}, fileVersionsFileIdRequestIdKey, fileVersionsFileIdVersionKey, fileVersionsIdKey)
 	return ret, err
 }
 
@@ -129,12 +155,13 @@ func (m *defaultFileVersionsModel) Update(ctx context.Context, newData *FileVers
 		return err
 	}
 
+	fileVersionsFileIdRequestIdKey := fmt.Sprintf("%s%v:%v", cacheFileVersionsFileIdRequestIdPrefix, data.FileId, data.RequestId)
 	fileVersionsFileIdVersionKey := fmt.Sprintf("%s%v:%v", cacheFileVersionsFileIdVersionPrefix, data.FileId, data.Version)
 	fileVersionsIdKey := fmt.Sprintf("%s%v", cacheFileVersionsIdPrefix, data.Id)
 	_, err = m.ExecCtx(ctx, func(ctx context.Context, conn sqlx.SqlConn) (result sql.Result, err error) {
 		query := fmt.Sprintf("update %s set %s where `id` = ?", m.table, fileVersionsRowsWithPlaceHolder)
-		return conn.ExecCtx(ctx, query, newData.FileId, newData.OwnerId, newData.Version, newData.Size, newData.ContentHash, newData.ObjectKey, newData.Id)
-	}, fileVersionsFileIdVersionKey, fileVersionsIdKey)
+		return conn.ExecCtx(ctx, query, newData.FileId, newData.OwnerId, newData.Version, newData.Size, newData.ContentType, newData.ContentHash, newData.ObjectKey, newData.RequestId, newData.Id)
+	}, fileVersionsFileIdRequestIdKey, fileVersionsFileIdVersionKey, fileVersionsIdKey)
 	return err
 }
 

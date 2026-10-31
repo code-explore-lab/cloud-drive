@@ -1,15 +1,18 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 
 	"cloud-drive/service/storage/rpc/internal/config"
+	"cloud-drive/service/storage/rpc/internal/jobs"
 	"cloud-drive/service/storage/rpc/internal/server"
 	"cloud-drive/service/storage/rpc/internal/svc"
 	"cloud-drive/service/storage/rpc/types/storage"
 
 	"github.com/zeromicro/go-zero/core/conf"
+	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/service"
 	"github.com/zeromicro/go-zero/zrpc"
 	"google.golang.org/grpc"
@@ -23,10 +26,19 @@ func main() {
 
 	var c config.Config
 	conf.MustLoad(*configFile, &c)
-	ctx := svc.NewServiceContext(c)
+	svcCtx := svc.NewServiceContext(c)
+
+	// bucket 初始化与清理任务放在后台跑：MinIO 比本服务晚启动时也能自愈。
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	if c.Maintenance.Enabled {
+		jobs.NewMaintenance(svcCtx).Start(ctx)
+	} else {
+		logx.Info("storage maintenance is disabled by config")
+	}
 
 	s := zrpc.MustNewServer(c.RpcServerConf, func(grpcServer *grpc.Server) {
-		storage.RegisterStorageServer(grpcServer, server.NewStorageServer(ctx))
+		storage.RegisterStorageServer(grpcServer, server.NewStorageServer(svcCtx))
 
 		if c.Mode == service.DevMode || c.Mode == service.TestMode {
 			reflection.Register(grpcServer)

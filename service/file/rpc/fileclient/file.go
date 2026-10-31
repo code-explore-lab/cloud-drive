@@ -14,20 +14,62 @@ import (
 )
 
 type (
+	AccessShareRequest       = file.AccessShareRequest
+	AccessShareResponse      = file.AccessShareResponse
+	AddVersionRequest        = file.AddVersionRequest
+	AddVersionResponse       = file.AddVersionResponse
 	CreateFileRequest        = file.CreateFileRequest
 	CreateFileResponse       = file.CreateFileResponse
+	CreateFolderRequest      = file.CreateFolderRequest
+	CreateFolderResponse     = file.CreateFolderResponse
+	CreateShareRequest       = file.CreateShareRequest
+	CreateShareResponse      = file.CreateShareResponse
 	DeleteFileRequest        = file.DeleteFileRequest
 	DeleteFileResponse       = file.DeleteFileResponse
+	DeleteFolderRequest      = file.DeleteFolderRequest
+	DeleteFolderResponse     = file.DeleteFolderResponse
+	FileItem                 = file.FileItem
 	GetFileRequest           = file.GetFileRequest
 	GetFileResponse          = file.GetFileResponse
+	ListFilesRequest         = file.ListFilesRequest
+	ListFilesResponse        = file.ListFilesResponse
+	ListSharesRequest        = file.ListSharesRequest
+	ListSharesResponse       = file.ListSharesResponse
+	ListVersionsRequest      = file.ListVersionsRequest
+	ListVersionsResponse     = file.ListVersionsResponse
+	MoveFileRequest          = file.MoveFileRequest
+	MoveFileResponse         = file.MoveFileResponse
+	ObjectRef                = file.ObjectRef
+	RenameFileRequest        = file.RenameFileRequest
+	RenameFileResponse       = file.RenameFileResponse
+	RestoreVersionRequest    = file.RestoreVersionRequest
+	RestoreVersionResponse   = file.RestoreVersionResponse
+	RevokeShareRequest       = file.RevokeShareRequest
+	RevokeShareResponse      = file.RevokeShareResponse
+	ShareItem                = file.ShareItem
 	UpdateFileStatusRequest  = file.UpdateFileStatusRequest
 	UpdateFileStatusResponse = file.UpdateFileStatusResponse
+	VersionItem              = file.VersionItem
 
 	File interface {
-		GetFile(ctx context.Context, in *GetFileRequest, opts ...grpc.CallOption) (*GetFileResponse, error)
 		CreateFile(ctx context.Context, in *CreateFileRequest, opts ...grpc.CallOption) (*CreateFileResponse, error)
+		GetFile(ctx context.Context, in *GetFileRequest, opts ...grpc.CallOption) (*GetFileResponse, error)
 		UpdateFileStatus(ctx context.Context, in *UpdateFileStatusRequest, opts ...grpc.CallOption) (*UpdateFileStatusResponse, error)
+		ListFiles(ctx context.Context, in *ListFilesRequest, opts ...grpc.CallOption) (*ListFilesResponse, error)
+		CreateFolder(ctx context.Context, in *CreateFolderRequest, opts ...grpc.CallOption) (*CreateFolderResponse, error)
+		RenameFile(ctx context.Context, in *RenameFileRequest, opts ...grpc.CallOption) (*RenameFileResponse, error)
+		MoveFile(ctx context.Context, in *MoveFileRequest, opts ...grpc.CallOption) (*MoveFileResponse, error)
 		DeleteFile(ctx context.Context, in *DeleteFileRequest, opts ...grpc.CallOption) (*DeleteFileResponse, error)
+		DeleteFolder(ctx context.Context, in *DeleteFolderRequest, opts ...grpc.CallOption) (*DeleteFolderResponse, error)
+		// 分享
+		CreateShare(ctx context.Context, in *CreateShareRequest, opts ...grpc.CallOption) (*CreateShareResponse, error)
+		ListShares(ctx context.Context, in *ListSharesRequest, opts ...grpc.CallOption) (*ListSharesResponse, error)
+		RevokeShare(ctx context.Context, in *RevokeShareRequest, opts ...grpc.CallOption) (*RevokeShareResponse, error)
+		AccessShare(ctx context.Context, in *AccessShareRequest, opts ...grpc.CallOption) (*AccessShareResponse, error)
+		// 版本
+		AddVersion(ctx context.Context, in *AddVersionRequest, opts ...grpc.CallOption) (*AddVersionResponse, error)
+		ListVersions(ctx context.Context, in *ListVersionsRequest, opts ...grpc.CallOption) (*ListVersionsResponse, error)
+		RestoreVersion(ctx context.Context, in *RestoreVersionRequest, opts ...grpc.CallOption) (*RestoreVersionResponse, error)
 	}
 
 	defaultFile struct {
@@ -41,14 +83,14 @@ func NewFile(cli zrpc.Client) File {
 	}
 }
 
-func (m *defaultFile) GetFile(ctx context.Context, in *GetFileRequest, opts ...grpc.CallOption) (*GetFileResponse, error) {
-	client := file.NewFileClient(m.cli.Conn())
-	return client.GetFile(ctx, in, opts...)
-}
-
 func (m *defaultFile) CreateFile(ctx context.Context, in *CreateFileRequest, opts ...grpc.CallOption) (*CreateFileResponse, error) {
 	client := file.NewFileClient(m.cli.Conn())
 	return client.CreateFile(ctx, in, opts...)
+}
+
+func (m *defaultFile) GetFile(ctx context.Context, in *GetFileRequest, opts ...grpc.CallOption) (*GetFileResponse, error) {
+	client := file.NewFileClient(m.cli.Conn())
+	return client.GetFile(ctx, in, opts...)
 }
 
 func (m *defaultFile) UpdateFileStatus(ctx context.Context, in *UpdateFileStatusRequest, opts ...grpc.CallOption) (*UpdateFileStatusResponse, error) {
@@ -56,7 +98,69 @@ func (m *defaultFile) UpdateFileStatus(ctx context.Context, in *UpdateFileStatus
 	return client.UpdateFileStatus(ctx, in, opts...)
 }
 
+func (m *defaultFile) ListFiles(ctx context.Context, in *ListFilesRequest, opts ...grpc.CallOption) (*ListFilesResponse, error) {
+	client := file.NewFileClient(m.cli.Conn())
+	return client.ListFiles(ctx, in, opts...)
+}
+
+func (m *defaultFile) CreateFolder(ctx context.Context, in *CreateFolderRequest, opts ...grpc.CallOption) (*CreateFolderResponse, error) {
+	client := file.NewFileClient(m.cli.Conn())
+	return client.CreateFolder(ctx, in, opts...)
+}
+
+func (m *defaultFile) RenameFile(ctx context.Context, in *RenameFileRequest, opts ...grpc.CallOption) (*RenameFileResponse, error) {
+	client := file.NewFileClient(m.cli.Conn())
+	return client.RenameFile(ctx, in, opts...)
+}
+
+func (m *defaultFile) MoveFile(ctx context.Context, in *MoveFileRequest, opts ...grpc.CallOption) (*MoveFileResponse, error) {
+	client := file.NewFileClient(m.cli.Conn())
+	return client.MoveFile(ctx, in, opts...)
+}
+
 func (m *defaultFile) DeleteFile(ctx context.Context, in *DeleteFileRequest, opts ...grpc.CallOption) (*DeleteFileResponse, error) {
 	client := file.NewFileClient(m.cli.Conn())
 	return client.DeleteFile(ctx, in, opts...)
+}
+
+func (m *defaultFile) DeleteFolder(ctx context.Context, in *DeleteFolderRequest, opts ...grpc.CallOption) (*DeleteFolderResponse, error) {
+	client := file.NewFileClient(m.cli.Conn())
+	return client.DeleteFolder(ctx, in, opts...)
+}
+
+// 分享
+func (m *defaultFile) CreateShare(ctx context.Context, in *CreateShareRequest, opts ...grpc.CallOption) (*CreateShareResponse, error) {
+	client := file.NewFileClient(m.cli.Conn())
+	return client.CreateShare(ctx, in, opts...)
+}
+
+func (m *defaultFile) ListShares(ctx context.Context, in *ListSharesRequest, opts ...grpc.CallOption) (*ListSharesResponse, error) {
+	client := file.NewFileClient(m.cli.Conn())
+	return client.ListShares(ctx, in, opts...)
+}
+
+func (m *defaultFile) RevokeShare(ctx context.Context, in *RevokeShareRequest, opts ...grpc.CallOption) (*RevokeShareResponse, error) {
+	client := file.NewFileClient(m.cli.Conn())
+	return client.RevokeShare(ctx, in, opts...)
+}
+
+func (m *defaultFile) AccessShare(ctx context.Context, in *AccessShareRequest, opts ...grpc.CallOption) (*AccessShareResponse, error) {
+	client := file.NewFileClient(m.cli.Conn())
+	return client.AccessShare(ctx, in, opts...)
+}
+
+// 版本
+func (m *defaultFile) AddVersion(ctx context.Context, in *AddVersionRequest, opts ...grpc.CallOption) (*AddVersionResponse, error) {
+	client := file.NewFileClient(m.cli.Conn())
+	return client.AddVersion(ctx, in, opts...)
+}
+
+func (m *defaultFile) ListVersions(ctx context.Context, in *ListVersionsRequest, opts ...grpc.CallOption) (*ListVersionsResponse, error) {
+	client := file.NewFileClient(m.cli.Conn())
+	return client.ListVersions(ctx, in, opts...)
+}
+
+func (m *defaultFile) RestoreVersion(ctx context.Context, in *RestoreVersionRequest, opts ...grpc.CallOption) (*RestoreVersionResponse, error) {
+	client := file.NewFileClient(m.cli.Conn())
+	return client.RestoreVersion(ctx, in, opts...)
 }

@@ -3,13 +3,35 @@
 
 package types
 
+type AbortUploadReq struct {
+	UploadID string `path:"uploadId"`
+}
+
+type AbortUploadResp struct {
+	Success bool `json:"success"`
+}
+
+type AccessShareReq struct {
+	Token    string `path:"token"`
+	Password string `json:"password,optional"`
+}
+
+type AccessShareResp struct {
+	Granted     bool   `json:"granted"`
+	FileName    string `json:"fileName"`
+	Size        int64  `json:"size"`
+	ContentType string `json:"contentType"`
+	DownloadURL string `json:"downloadUrl"`
+}
+
 type CompleteUploadReq struct {
-	UploadID string `json:"uploadId"`
+	UploadID string `path:"uploadId"`
 }
 
 type CompleteUploadResp struct {
-	FileID int64  `json:"fileId"`
-	Status string `json:"status"`
+	FileID  int64  `json:"fileId"`
+	Version int64  `json:"version"`
+	Status  string `json:"status"`
 }
 
 type CreateFolderReq struct {
@@ -21,8 +43,32 @@ type CreateFolderResp struct {
 	FolderID int64 `json:"folderId"`
 }
 
+type CreateShareReq struct {
+	FileID         int64  `json:"fileId"`
+	Password       string `json:"password,optional"`
+	ExpiresAt      int64  `json:"expiresAt,optional"`
+	MaxAccessCount int64  `json:"maxAccessCount,optional"`
+}
+
+type CreateShareResp struct {
+	ShareID   int64  `json:"shareId"`
+	Token     string `json:"token"`
+	URL       string `json:"url"`
+	ExpiresAt int64  `json:"expiresAt"`
+}
+
 type DeleteFileResp struct {
-	Success bool `json:"success"`
+	Success       bool  `json:"success"`
+	ReleasedBytes int64 `json:"releasedBytes"`
+}
+
+type DownloadSharedFileReq struct {
+	Token    string `path:"token"`
+	Password string `form:"password,optional"`
+}
+
+type FileIDReq struct {
+	FileID int64 `path:"fileId"`
 }
 
 type FileItem struct {
@@ -33,8 +79,13 @@ type FileItem struct {
 	ContentType string `json:"contentType"`
 	IsFolder    bool   `json:"isFolder"`
 	Status      string `json:"status"`
+	Version     int64  `json:"version"`
 	CreatedAt   int64  `json:"createdAt"`
 	UpdatedAt   int64  `json:"updatedAt"`
+}
+
+type FolderIDReq struct {
+	FolderID int64 `path:"folderId"`
 }
 
 type GetFileResp struct {
@@ -42,11 +93,12 @@ type GetFileResp struct {
 }
 
 type InitUploadReq struct {
-	ParentID    int64  `json:"parentId"`
-	Name        string `json:"name"`
-	Size        int64  `json:"size"`
-	ContentType string `json:"contentType"`
-	ContentHash string `json:"contentHash"`
+	ParentID       int64  `json:"parentId"`
+	Name           string `json:"name"`
+	Size           int64  `json:"size"`
+	ContentType    string `json:"contentType,optional"`
+	ContentHash    string `json:"contentHash,optional"`
+	IdempotencyKey string `json:"idempotencyKey,optional"`
 }
 
 type InitUploadResp struct {
@@ -54,6 +106,14 @@ type InitUploadResp struct {
 	FileID      int64  `json:"fileId"`
 	ChunkSize   int64  `json:"chunkSize"`
 	TotalChunks int64  `json:"totalChunks"`
+	ExpiresAt   int64  `json:"expiresAt"`
+}
+
+type InitVersionUploadReq struct {
+	FileID      int64  `path:"fileId"`
+	Size        int64  `json:"size"`
+	ContentType string `json:"contentType,optional"`
+	ContentHash string `json:"contentHash,optional"`
 }
 
 type ListFilesReq struct {
@@ -69,6 +129,97 @@ type ListFilesResp struct {
 	PageSize int64      `json:"pageSize"`
 }
 
+type ListSharesReq struct {
+	Page     int64 `form:"page,default=1"`
+	PageSize int64 `form:"pageSize,default=20"`
+}
+
+type ListSharesResp struct {
+	Items    []ShareItem `json:"items"`
+	Total    int64       `json:"total"`
+	Page     int64       `json:"page"`
+	PageSize int64       `json:"pageSize"`
+}
+
+type ListVersionsReq struct {
+	FileID int64 `path:"fileId"`
+}
+
+type ListVersionsResp struct {
+	Items []VersionItem `json:"items"`
+}
+
+type MoveFileReq struct {
+	FileID         int64  `path:"fileId"`
+	TargetParentID int64  `json:"targetParentId"`
+	Name           string `json:"name,optional"`
+}
+
 type RenameFileReq struct {
-	Name string `json:"name"`
+	FileID int64  `path:"fileId"`
+	Name   string `json:"name"`
+}
+
+type RestoreVersionReq struct {
+	FileID  int64 `path:"fileId"`
+	Version int64 `path:"version"`
+}
+
+type RestoreVersionResp struct {
+	Success bool  `json:"success"`
+	Version int64 `json:"version"`
+}
+
+type RevokeShareResp struct {
+	Success bool `json:"success"`
+}
+
+type ShareIDReq struct {
+	ShareID int64 `path:"shareId"`
+}
+
+type ShareItem struct {
+	ShareID        int64  `json:"shareId"`
+	FileID         int64  `json:"fileId"`
+	FileName       string `json:"fileName"`
+	Active         bool   `json:"active"`
+	HasPassword    bool   `json:"hasPassword"`
+	ExpiresAt      int64  `json:"expiresAt"`
+	MaxAccessCount int64  `json:"maxAccessCount"`
+	AccessCount    int64  `json:"accessCount"`
+	CreatedAt      int64  `json:"createdAt"`
+}
+
+type UploadPartState struct {
+	PartNumber int64  `json:"partNumber"`
+	Size       int64  `json:"size"`
+	ETag       string `json:"etag"`
+}
+
+type UploadProgressReq struct {
+	UploadID string `path:"uploadId"`
+}
+
+type UploadProgressResp struct {
+	UploadID       string            `json:"uploadId"`
+	Status         string            `json:"status"`
+	FileID         int64             `json:"fileId"`
+	FileName       string            `json:"fileName"`
+	TotalSize      int64             `json:"totalSize"`
+	ChunkSize      int64             `json:"chunkSize"`
+	TotalChunks    int64             `json:"totalChunks"`
+	UploadedChunks int64             `json:"uploadedChunks"`
+	UploadedBytes  int64             `json:"uploadedBytes"`
+	MissingParts   []int64           `json:"missingParts"`
+	Parts          []UploadPartState `json:"parts"`
+	ExpiresAt      int64             `json:"expiresAt"`
+}
+
+type VersionItem struct {
+	Version     int64  `json:"version"`
+	Size        int64  `json:"size"`
+	ContentType string `json:"contentType"`
+	ContentHash string `json:"contentHash"`
+	Current     bool   `json:"current"`
+	CreatedAt   int64  `json:"createdAt"`
 }

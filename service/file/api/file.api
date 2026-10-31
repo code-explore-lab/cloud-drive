@@ -7,6 +7,10 @@ info (
 	version: "v1"
 )
 
+// 说明：两个流式接口（文件下载、分享下载）需要直接写 ResponseWriter，
+// goctl 的 JSON 绑定不适用，因此手写在 internal/handler/download.go，
+// 由 internal/handler/routes.go 手工注册。
+
 type FileItem {
 	FileID      int64  `json:"fileId"`
 	ParentID    int64  `json:"parentId"`
@@ -15,6 +19,7 @@ type FileItem {
 	ContentType string `json:"contentType"`
 	IsFolder    bool   `json:"isFolder"`
 	Status      string `json:"status"`
+	Version     int64  `json:"version"`
 	CreatedAt   int64  `json:"createdAt"`
 	UpdatedAt   int64  `json:"updatedAt"`
 }
@@ -41,20 +46,41 @@ type CreateFolderResp {
 	FolderID int64 `json:"folderId"`
 }
 
+type FileIDReq {
+	FileID int64 `path:"fileId"`
+}
+
+type FolderIDReq {
+	FolderID int64 `path:"folderId"`
+}
+
 type RenameFileReq {
-	Name string `json:"name"`
+	FileID int64  `path:"fileId"`
+	Name   string `json:"name"`
+}
+
+type MoveFileReq {
+	FileID         int64  `path:"fileId"`
+	TargetParentID int64  `json:"targetParentId"`
+	Name           string `json:"name,optional"`
 }
 
 type DeleteFileResp {
-	Success bool `json:"success"`
+	Success       bool  `json:"success"`
+	ReleasedBytes int64 `json:"releasedBytes"`
+}
+
+type GetFileResp {
+	File FileItem `json:"file"`
 }
 
 type InitUploadReq {
-	ParentID    int64  `json:"parentId"`
-	Name        string `json:"name"`
-	Size        int64  `json:"size"`
-	ContentType string `json:"contentType"`
-	ContentHash string `json:"contentHash"`
+	ParentID       int64  `json:"parentId"`
+	Name           string `json:"name"`
+	Size           int64  `json:"size"`
+	ContentType    string `json:"contentType,optional"`
+	ContentHash    string `json:"contentHash,optional"`
+	IdempotencyKey string `json:"idempotencyKey,optional"`
 }
 
 type InitUploadResp {
@@ -62,41 +88,202 @@ type InitUploadResp {
 	FileID      int64  `json:"fileId"`
 	ChunkSize   int64  `json:"chunkSize"`
 	TotalChunks int64  `json:"totalChunks"`
+	ExpiresAt   int64  `json:"expiresAt"`
+}
+
+type UploadProgressReq {
+	UploadID string `path:"uploadId"`
+}
+
+type UploadPartState {
+	PartNumber int64  `json:"partNumber"`
+	Size       int64  `json:"size"`
+	ETag       string `json:"etag"`
+}
+
+type UploadProgressResp {
+	UploadID       string            `json:"uploadId"`
+	Status         string            `json:"status"`
+	FileID         int64             `json:"fileId"`
+	FileName       string            `json:"fileName"`
+	TotalSize      int64             `json:"totalSize"`
+	ChunkSize      int64             `json:"chunkSize"`
+	TotalChunks    int64             `json:"totalChunks"`
+	UploadedChunks int64             `json:"uploadedChunks"`
+	UploadedBytes  int64             `json:"uploadedBytes"`
+	MissingParts   []int64           `json:"missingParts"`
+	Parts          []UploadPartState `json:"parts"`
+	ExpiresAt      int64             `json:"expiresAt"`
 }
 
 type CompleteUploadReq {
-	UploadID string `json:"uploadId"`
+	UploadID string `path:"uploadId"`
 }
 
 type CompleteUploadResp {
-	FileID int64  `json:"fileId"`
-	Status string `json:"status"`
+	FileID  int64  `json:"fileId"`
+	Version int64  `json:"version"`
+	Status  string `json:"status"`
 }
 
-type GetFileResp {
-	File FileItem `json:"file"`
+type AbortUploadReq {
+	UploadID string `path:"uploadId"`
+}
+
+type AbortUploadResp {
+	Success bool `json:"success"`
+}
+
+type InitVersionUploadReq {
+	FileID      int64  `path:"fileId"`
+	Size        int64  `json:"size"`
+	ContentType string `json:"contentType,optional"`
+	ContentHash string `json:"contentHash,optional"`
+}
+
+type ListVersionsReq {
+	FileID int64 `path:"fileId"`
+}
+
+type VersionItem {
+	Version     int64  `json:"version"`
+	Size        int64  `json:"size"`
+	ContentType string `json:"contentType"`
+	ContentHash string `json:"contentHash"`
+	Current     bool   `json:"current"`
+	CreatedAt   int64  `json:"createdAt"`
+}
+
+type ListVersionsResp {
+	Items []VersionItem `json:"items"`
+}
+
+type RestoreVersionReq {
+	FileID  int64 `path:"fileId"`
+	Version int64 `path:"version"`
+}
+
+type RestoreVersionResp {
+	Success bool  `json:"success"`
+	Version int64 `json:"version"`
+}
+
+type CreateShareReq {
+	FileID         int64  `json:"fileId"`
+	Password       string `json:"password,optional"`
+	ExpiresAt      int64  `json:"expiresAt,optional"`
+	MaxAccessCount int64  `json:"maxAccessCount,optional"`
+}
+
+type CreateShareResp {
+	ShareID   int64  `json:"shareId"`
+	Token     string `json:"token"`
+	URL       string `json:"url"`
+	ExpiresAt int64  `json:"expiresAt"`
+}
+
+type ShareItem {
+	ShareID        int64  `json:"shareId"`
+	FileID         int64  `json:"fileId"`
+	FileName       string `json:"fileName"`
+	Active         bool   `json:"active"`
+	HasPassword    bool   `json:"hasPassword"`
+	ExpiresAt      int64  `json:"expiresAt"`
+	MaxAccessCount int64  `json:"maxAccessCount"`
+	AccessCount    int64  `json:"accessCount"`
+	CreatedAt      int64  `json:"createdAt"`
+}
+
+type ListSharesReq {
+	Page     int64 `form:"page,default=1"`
+	PageSize int64 `form:"pageSize,default=20"`
+}
+
+type ListSharesResp {
+	Items    []ShareItem `json:"items"`
+	Total    int64       `json:"total"`
+	Page     int64       `json:"page"`
+	PageSize int64       `json:"pageSize"`
+}
+
+type ShareIDReq {
+	ShareID int64 `path:"shareId"`
+}
+
+type RevokeShareResp {
+	Success bool `json:"success"`
+}
+
+type AccessShareReq {
+	Token    string `path:"token"`
+	Password string `json:"password,optional"`
+}
+
+type AccessShareResp {
+	Granted     bool   `json:"granted"`
+	FileName    string `json:"fileName"`
+	Size        int64  `json:"size"`
+	ContentType string `json:"contentType"`
+	DownloadURL string `json:"downloadUrl"`
+}
+
+type DownloadSharedFileReq {
+	Token    string `path:"token"`
+	Password string `form:"password,optional"`
 }
 
 service file-api {
 	@handler ListFiles
 	get /v1/files (ListFilesReq) returns (ListFilesResp)
 
+	@handler GetFile
+	get /v1/files/:fileId (FileIDReq) returns (GetFileResp)
+
 	@handler CreateFolder
 	post /v1/folders (CreateFolderReq) returns (CreateFolderResp)
+
+	@handler DeleteFolder
+	delete /v1/folders/:folderId (FolderIDReq) returns (DeleteFileResp)
 
 	@handler RenameFile
 	put /v1/files/:fileId/name (RenameFileReq)
 
-	@handler DeleteFile
-	delete /v1/files/:fileId returns (DeleteFileResp)
+	@handler MoveFile
+	put /v1/files/:fileId/parent (MoveFileReq)
 
-	@handler GetFile
-	get /v1/files/:fileId returns (GetFileResp)
+	@handler DeleteFile
+	delete /v1/files/:fileId (FileIDReq) returns (DeleteFileResp)
 
 	@handler InitUpload
 	post /v1/uploads (InitUploadReq) returns (InitUploadResp)
 
+	@handler GetUploadProgress
+	get /v1/uploads/:uploadId (UploadProgressReq) returns (UploadProgressResp)
+
 	@handler CompleteUpload
 	post /v1/uploads/:uploadId/complete (CompleteUploadReq) returns (CompleteUploadResp)
-}
 
+	@handler AbortUpload
+	delete /v1/uploads/:uploadId (AbortUploadReq) returns (AbortUploadResp)
+
+	@handler InitVersionUpload
+	post /v1/files/:fileId/versions (InitVersionUploadReq) returns (InitUploadResp)
+
+	@handler ListVersions
+	get /v1/files/:fileId/versions (ListVersionsReq) returns (ListVersionsResp)
+
+	@handler RestoreVersion
+	post /v1/files/:fileId/versions/:version/restore (RestoreVersionReq) returns (RestoreVersionResp)
+
+	@handler CreateShare
+	post /v1/shares (CreateShareReq) returns (CreateShareResp)
+
+	@handler ListShares
+	get /v1/shares (ListSharesReq) returns (ListSharesResp)
+
+	@handler RevokeShare
+	delete /v1/shares/:shareId (ShareIDReq) returns (RevokeShareResp)
+
+	@handler AccessShare
+	post /v1/shares/:token/access (AccessShareReq) returns (AccessShareResp)
+}

@@ -1,0 +1,197 @@
+# ============================================================================
+# CloudDrive 服务配置（只放非敏感值）
+# ============================================================================
+# 说明：
+#   - go-zero 的 conf.Load 会在启动时对配置文本执行 os.ExpandEnv，所以配置里的
+#     ${VAR} 会被容器环境变量替换。这里保留 ${MYSQL_DSN}、${JWT_SECRET} 等写法，
+#     真实值由 Secret cloud-drive-secret 通过 envFrom 注入。
+#   - 基础设施地址使用同 namespace 内的 Service 名：
+#       mysql:3306 / redis:6379 / etcd:2379 / minio:9000
+#     MySQL 地址包含在 MYSQL_DSN 中（见 secret.example.yaml），不写在本 ConfigMap。
+#   - 这里的配置与 deploy/config/*.yaml 内容一致，只把宿主机端口换成了集群内地址。
+# ============================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cloud-drive-config
+  namespace: cloud-drive
+  labels:
+    app.kubernetes.io/name: cloud-drive
+    app.kubernetes.io/part-of: cloud-drive
+data:
+  user-api.yaml: |
+    Name: user-api
+    Host: 0.0.0.0
+    Port: 8000
+    Timeout: 10000
+    MaxBytes: 1048576
+    Log:
+      ServiceName: user-api
+      Mode: console
+      Encoding: json
+      Level: info
+    Limit:
+      RPS: 5
+      Burst: 10
+    UserRpc:
+      Etcd:
+        Hosts:
+          - etcd:2379
+        Key: user.rpc
+
+  file-api.yaml: |
+    Name: file-api
+    Host: 0.0.0.0
+    Port: 8001
+    Timeout: 10000
+    MaxBytes: 1048576
+    Log:
+      ServiceName: file-api
+      Mode: console
+      Encoding: json
+      Level: info
+    FileRpc:
+      Etcd:
+        Hosts:
+          - etcd:2379
+        Key: file.rpc
+    StorageRpc:
+      Etcd:
+        Hosts:
+          - etcd:2379
+        Key: storage.rpc
+    UserRpc:
+      Etcd:
+        Hosts:
+          - etcd:2379
+        Key: user.rpc
+    StorageApi:
+      BaseUrl: http://storage-api:8002
+    Internal:
+      Token: ${INTERNAL_TOKEN}
+    Share:
+      BaseUrl: ${PUBLIC_BASE_URL}
+    Upload:
+      MaxFileBytes: 10737418240
+
+  storage-api.yaml: |
+    Name: storage-api
+    Host: 0.0.0.0
+    Port: 8002
+    Timeout: 60000
+    MaxBytes: 1048576
+    Log:
+      ServiceName: storage-api
+      Mode: console
+      Encoding: json
+      Level: info
+    Minio:
+      Endpoint: ${MINIO_ENDPOINT}
+      AccessKey: ${MINIO_ACCESS_KEY}
+      SecretKey: ${MINIO_SECRET_KEY}
+      Bucket: ${MINIO_BUCKET}
+      UseSSL: ${MINIO_USE_SSL}
+    Internal:
+      Token: ${INTERNAL_TOKEN}
+    MaxChunkBytes: 16777216
+    StorageRpc:
+      Etcd:
+        Hosts:
+          - etcd:2379
+        Key: storage.rpc
+    UserRpc:
+      Etcd:
+        Hosts:
+          - etcd:2379
+        Key: user.rpc
+
+  user.rpc.yaml: |
+    Name: user.rpc
+    ListenOn: 0.0.0.0:9000
+    Etcd:
+      Hosts:
+        - etcd:2379
+      Key: user.rpc
+    Mysql:
+      DataSource: ${MYSQL_DSN}
+    CacheRedis:
+      - Host: redis:6379
+        Type: node
+        Pass: ${REDIS_PASSWORD}
+    JwtSecret: ${JWT_SECRET}
+    Salt: ${USER_SALT}
+    Log:
+      ServiceName: user.rpc
+      Mode: console
+      Encoding: json
+      Level: info
+
+  file.rpc.yaml: |
+    Name: file.rpc
+    ListenOn: 0.0.0.0:9001
+    Etcd:
+      Hosts:
+        - etcd:2379
+      Key: file.rpc
+    Mysql:
+      DataSource: ${MYSQL_DSN}
+    CacheRedis:
+      - Host: redis:6379
+        Type: node
+        Pass: ${REDIS_PASSWORD}
+    Log:
+      ServiceName: file.rpc
+      Mode: console
+      Encoding: json
+      Level: info
+
+  storage.rpc.yaml: |
+    Name: storage.rpc
+    ListenOn: 0.0.0.0:9002
+    Etcd:
+      Hosts:
+        - etcd:2379
+      Key: storage.rpc
+    Mysql:
+      DataSource: ${MYSQL_DSN}
+    CacheRedis:
+      - Host: redis:6379
+        Type: node
+        Pass: ${REDIS_PASSWORD}
+    Minio:
+      Endpoint: ${MINIO_ENDPOINT}
+      AccessKey: ${MINIO_ACCESS_KEY}
+      SecretKey: ${MINIO_SECRET_KEY}
+      Bucket: ${MINIO_BUCKET}
+      UseSSL: ${MINIO_USE_SSL}
+    Maintenance:
+      Enabled: true
+      Interval: 600
+      UploadTTL: 24
+      BatchSize: 200
+    Log:
+      ServiceName: storage.rpc
+      Mode: console
+      Encoding: json
+      Level: info
+---
+# 非敏感的环境变量：与 docker-compose.yml 里的 x-minio-env / TZ 保持一致。
+# 通过 envFrom 注入到 6 个 Go 服务的容器中，供配置里的 ${VAR} 展开。
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cloud-drive-env
+  namespace: cloud-drive
+  labels:
+    app.kubernetes.io/name: cloud-drive
+    app.kubernetes.io/part-of: cloud-drive
+data:
+  TZ: Asia/Shanghai
+  # MinIO 服务在 namespace 内的地址；storage-api 与 storage.rpc 共用。
+  MINIO_ENDPOINT: minio:9000
+  MINIO_BUCKET: cloud-drive
+  MINIO_USE_SSL: "false"
+  # 分享链接的对外基地址。当前只有 ClusterIP，外部访问需要改成 Ingress 域名。
+  PUBLIC_BASE_URL: http://file-api:8001
+  # Redis 默认没有密码；compose 里也是空值。若启用 Redis AUTH，应改为从 Secret 注入。
+  REDIS_PASSWORD: ""

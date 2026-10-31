@@ -1,11 +1,36 @@
 Name: file-api
 Host: 0.0.0.0
 Port: 8001
-
-Mysql:
-  DataSource: root:123456@tcp(127.0.0.1:13306)/cloud-drive?charset=utf8mb4&parseTime=true&loc=Asia%2FShanghai
-
-CacheRedis:
-  - Host: 127.0.0.1:16379
-    Pass:
-    Type: node
+Timeout: 60000
+MaxBytes: 1048576
+Log:
+  ServiceName: file-api
+  Mode: console
+  Encoding: json
+  Level: info
+FileRpc:
+  Timeout: 30000
+  Etcd:
+    Hosts:
+      - 127.0.0.1:12379
+    Key: file.rpc
+StorageRpc:
+  Timeout: 30000
+  Etcd:
+    Hosts:
+      - 127.0.0.1:12379
+    Key: storage.rpc
+UserRpc:
+  Timeout: 15000
+  Etcd:
+    Hosts:
+      - 127.0.0.1:12379
+    Key: user.rpc
+StorageApi:
+  BaseUrl: http://127.0.0.1:8002
+Internal:
+  Token: dev-internal-token
+Share:
+  BaseUrl: http://127.0.0.1:8001
+Upload:
+  MaxFileBytes: 10737418240

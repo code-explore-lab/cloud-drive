@@ -245,6 +245,111 @@ func (x *LoginResponse) GetExpiresAt() int64 {
 	return 0
 }
 
+type LogoutRequest struct {
+	state  protoimpl.MessageState `protogen:"open.v1"`
+	UserId int64                  `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	// 为空时撤销该用户全部 refresh token（退出所有设备）。
+	RefreshToken  string `protobuf:"bytes,2,opt,name=refresh_token,json=refreshToken,proto3" json:"refresh_token,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *LogoutRequest) Reset() {
+	*x = LogoutRequest{}
+	mi := &file_user_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *LogoutRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*LogoutRequest) ProtoMessage() {}
+
+func (x *LogoutRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_user_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use LogoutRequest.ProtoReflect.Descriptor instead.
+func (*LogoutRequest) Descriptor() ([]byte, []int) {
+	return file_user_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *LogoutRequest) GetUserId() int64 {
+	if x != nil {
+		return x.UserId
+	}
+	return 0
+}
+
+func (x *LogoutRequest) GetRefreshToken() string {
+	if x != nil {
+		return x.RefreshToken
+	}
+	return ""
+}
+
+type LogoutResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	RevokedCount  int64                  `protobuf:"varint,2,opt,name=revoked_count,json=revokedCount,proto3" json:"revoked_count,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *LogoutResponse) Reset() {
+	*x = LogoutResponse{}
+	mi := &file_user_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *LogoutResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*LogoutResponse) ProtoMessage() {}
+
+func (x *LogoutResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_user_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use LogoutResponse.ProtoReflect.Descriptor instead.
+func (*LogoutResponse) Descriptor() ([]byte, []int) {
+	return file_user_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *LogoutResponse) GetSuccess() bool {
+	if x != nil {
+		return x.Success
+	}
+	return false
+}
+
+func (x *LogoutResponse) GetRevokedCount() int64 {
+	if x != nil {
+		return x.RevokedCount
+	}
+	return 0
+}
+
 type RefreshTokenRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	RefreshToken  string                 `protobuf:"bytes,1,opt,name=refresh_token,json=refreshToken,proto3" json:"refresh_token,omitempty"`
@@ -254,7 +359,7 @@ type RefreshTokenRequest struct {
 
 func (x *RefreshTokenRequest) Reset() {
 	*x = RefreshTokenRequest{}
-	mi := &file_user_proto_msgTypes[4]
+	mi := &file_user_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -266,7 +371,7 @@ func (x *RefreshTokenRequest) String() string {
 func (*RefreshTokenRequest) ProtoMessage() {}
 
 func (x *RefreshTokenRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_user_proto_msgTypes[4]
+	mi := &file_user_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -279,7 +384,7 @@ func (x *RefreshTokenRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RefreshTokenRequest.ProtoReflect.Descriptor instead.
 func (*RefreshTokenRequest) Descriptor() ([]byte, []int) {
-	return file_user_proto_rawDescGZIP(), []int{4}
+	return file_user_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *RefreshTokenRequest) GetRefreshToken() string {
@@ -300,7 +405,7 @@ type RefreshTokenResponse struct {
 
 func (x *RefreshTokenResponse) Reset() {
 	*x = RefreshTokenResponse{}
-	mi := &file_user_proto_msgTypes[5]
+	mi := &file_user_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -312,7 +417,7 @@ func (x *RefreshTokenResponse) String() string {
 func (*RefreshTokenResponse) ProtoMessage() {}
 
 func (x *RefreshTokenResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_user_proto_msgTypes[5]
+	mi := &file_user_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -325,7 +430,7 @@ func (x *RefreshTokenResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RefreshTokenResponse.ProtoReflect.Descriptor instead.
 func (*RefreshTokenResponse) Descriptor() ([]byte, []int) {
-	return file_user_proto_rawDescGZIP(), []int{5}
+	return file_user_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *RefreshTokenResponse) GetAccessToken() string {
@@ -358,7 +463,7 @@ type GetUserRequest struct {
 
 func (x *GetUserRequest) Reset() {
 	*x = GetUserRequest{}
-	mi := &file_user_proto_msgTypes[6]
+	mi := &file_user_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -370,7 +475,7 @@ func (x *GetUserRequest) String() string {
 func (*GetUserRequest) ProtoMessage() {}
 
 func (x *GetUserRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_user_proto_msgTypes[6]
+	mi := &file_user_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -383,7 +488,7 @@ func (x *GetUserRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetUserRequest.ProtoReflect.Descriptor instead.
 func (*GetUserRequest) Descriptor() ([]byte, []int) {
-	return file_user_proto_rawDescGZIP(), []int{6}
+	return file_user_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *GetUserRequest) GetUserId() int64 {
@@ -406,7 +511,7 @@ type GetUserResponse struct {
 
 func (x *GetUserResponse) Reset() {
 	*x = GetUserResponse{}
-	mi := &file_user_proto_msgTypes[7]
+	mi := &file_user_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -418,7 +523,7 @@ func (x *GetUserResponse) String() string {
 func (*GetUserResponse) ProtoMessage() {}
 
 func (x *GetUserResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_user_proto_msgTypes[7]
+	mi := &file_user_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -431,7 +536,7 @@ func (x *GetUserResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetUserResponse.ProtoReflect.Descriptor instead.
 func (*GetUserResponse) Descriptor() ([]byte, []int) {
-	return file_user_proto_rawDescGZIP(), []int{7}
+	return file_user_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *GetUserResponse) GetUserId() int64 {
@@ -478,7 +583,7 @@ type ValidateTokenRequest struct {
 
 func (x *ValidateTokenRequest) Reset() {
 	*x = ValidateTokenRequest{}
-	mi := &file_user_proto_msgTypes[8]
+	mi := &file_user_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -490,7 +595,7 @@ func (x *ValidateTokenRequest) String() string {
 func (*ValidateTokenRequest) ProtoMessage() {}
 
 func (x *ValidateTokenRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_user_proto_msgTypes[8]
+	mi := &file_user_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -503,7 +608,7 @@ func (x *ValidateTokenRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ValidateTokenRequest.ProtoReflect.Descriptor instead.
 func (*ValidateTokenRequest) Descriptor() ([]byte, []int) {
-	return file_user_proto_rawDescGZIP(), []int{8}
+	return file_user_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *ValidateTokenRequest) GetAccessToken() string {
@@ -524,7 +629,7 @@ type ValidateTokenResponse struct {
 
 func (x *ValidateTokenResponse) Reset() {
 	*x = ValidateTokenResponse{}
-	mi := &file_user_proto_msgTypes[9]
+	mi := &file_user_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -536,7 +641,7 @@ func (x *ValidateTokenResponse) String() string {
 func (*ValidateTokenResponse) ProtoMessage() {}
 
 func (x *ValidateTokenResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_user_proto_msgTypes[9]
+	mi := &file_user_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -549,7 +654,7 @@ func (x *ValidateTokenResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ValidateTokenResponse.ProtoReflect.Descriptor instead.
 func (*ValidateTokenResponse) Descriptor() ([]byte, []int) {
-	return file_user_proto_rawDescGZIP(), []int{9}
+	return file_user_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *ValidateTokenResponse) GetValid() bool {
@@ -582,7 +687,7 @@ type GetQuotaRequest struct {
 
 func (x *GetQuotaRequest) Reset() {
 	*x = GetQuotaRequest{}
-	mi := &file_user_proto_msgTypes[10]
+	mi := &file_user_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -594,7 +699,7 @@ func (x *GetQuotaRequest) String() string {
 func (*GetQuotaRequest) ProtoMessage() {}
 
 func (x *GetQuotaRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_user_proto_msgTypes[10]
+	mi := &file_user_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -607,7 +712,7 @@ func (x *GetQuotaRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetQuotaRequest.ProtoReflect.Descriptor instead.
 func (*GetQuotaRequest) Descriptor() ([]byte, []int) {
-	return file_user_proto_rawDescGZIP(), []int{10}
+	return file_user_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *GetQuotaRequest) GetUserId() int64 {
@@ -628,7 +733,7 @@ type GetQuotaResponse struct {
 
 func (x *GetQuotaResponse) Reset() {
 	*x = GetQuotaResponse{}
-	mi := &file_user_proto_msgTypes[11]
+	mi := &file_user_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -640,7 +745,7 @@ func (x *GetQuotaResponse) String() string {
 func (*GetQuotaResponse) ProtoMessage() {}
 
 func (x *GetQuotaResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_user_proto_msgTypes[11]
+	mi := &file_user_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -653,7 +758,7 @@ func (x *GetQuotaResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetQuotaResponse.ProtoReflect.Descriptor instead.
 func (*GetQuotaResponse) Descriptor() ([]byte, []int) {
-	return file_user_proto_rawDescGZIP(), []int{11}
+	return file_user_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *GetQuotaResponse) GetTotalBytes() int64 {
@@ -688,7 +793,7 @@ type ReserveQuotaRequest struct {
 
 func (x *ReserveQuotaRequest) Reset() {
 	*x = ReserveQuotaRequest{}
-	mi := &file_user_proto_msgTypes[12]
+	mi := &file_user_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -700,7 +805,7 @@ func (x *ReserveQuotaRequest) String() string {
 func (*ReserveQuotaRequest) ProtoMessage() {}
 
 func (x *ReserveQuotaRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_user_proto_msgTypes[12]
+	mi := &file_user_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -713,7 +818,7 @@ func (x *ReserveQuotaRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReserveQuotaRequest.ProtoReflect.Descriptor instead.
 func (*ReserveQuotaRequest) Descriptor() ([]byte, []int) {
-	return file_user_proto_rawDescGZIP(), []int{12}
+	return file_user_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *ReserveQuotaRequest) GetUserId() int64 {
@@ -748,7 +853,7 @@ type ReserveQuotaResponse struct {
 
 func (x *ReserveQuotaResponse) Reset() {
 	*x = ReserveQuotaResponse{}
-	mi := &file_user_proto_msgTypes[13]
+	mi := &file_user_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -760,7 +865,7 @@ func (x *ReserveQuotaResponse) String() string {
 func (*ReserveQuotaResponse) ProtoMessage() {}
 
 func (x *ReserveQuotaResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_user_proto_msgTypes[13]
+	mi := &file_user_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -773,7 +878,7 @@ func (x *ReserveQuotaResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReserveQuotaResponse.ProtoReflect.Descriptor instead.
 func (*ReserveQuotaResponse) Descriptor() ([]byte, []int) {
-	return file_user_proto_rawDescGZIP(), []int{13}
+	return file_user_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *ReserveQuotaResponse) GetSuccess() bool {
@@ -797,6 +902,118 @@ func (x *ReserveQuotaResponse) GetReason() string {
 	return ""
 }
 
+type CommitQuotaRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        int64                  `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	Bytes         int64                  `protobuf:"varint,2,opt,name=bytes,proto3" json:"bytes,omitempty"`
+	RequestId     string                 `protobuf:"bytes,3,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CommitQuotaRequest) Reset() {
+	*x = CommitQuotaRequest{}
+	mi := &file_user_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CommitQuotaRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CommitQuotaRequest) ProtoMessage() {}
+
+func (x *CommitQuotaRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_user_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CommitQuotaRequest.ProtoReflect.Descriptor instead.
+func (*CommitQuotaRequest) Descriptor() ([]byte, []int) {
+	return file_user_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *CommitQuotaRequest) GetUserId() int64 {
+	if x != nil {
+		return x.UserId
+	}
+	return 0
+}
+
+func (x *CommitQuotaRequest) GetBytes() int64 {
+	if x != nil {
+		return x.Bytes
+	}
+	return 0
+}
+
+func (x *CommitQuotaRequest) GetRequestId() string {
+	if x != nil {
+		return x.RequestId
+	}
+	return ""
+}
+
+type CommitQuotaResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	Reason        string                 `protobuf:"bytes,2,opt,name=reason,proto3" json:"reason,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CommitQuotaResponse) Reset() {
+	*x = CommitQuotaResponse{}
+	mi := &file_user_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CommitQuotaResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CommitQuotaResponse) ProtoMessage() {}
+
+func (x *CommitQuotaResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_user_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CommitQuotaResponse.ProtoReflect.Descriptor instead.
+func (*CommitQuotaResponse) Descriptor() ([]byte, []int) {
+	return file_user_proto_rawDescGZIP(), []int{17}
+}
+
+func (x *CommitQuotaResponse) GetSuccess() bool {
+	if x != nil {
+		return x.Success
+	}
+	return false
+}
+
+func (x *CommitQuotaResponse) GetReason() string {
+	if x != nil {
+		return x.Reason
+	}
+	return ""
+}
+
 type ReleaseQuotaRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	UserId        int64                  `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
@@ -808,7 +1025,7 @@ type ReleaseQuotaRequest struct {
 
 func (x *ReleaseQuotaRequest) Reset() {
 	*x = ReleaseQuotaRequest{}
-	mi := &file_user_proto_msgTypes[14]
+	mi := &file_user_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -820,7 +1037,7 @@ func (x *ReleaseQuotaRequest) String() string {
 func (*ReleaseQuotaRequest) ProtoMessage() {}
 
 func (x *ReleaseQuotaRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_user_proto_msgTypes[14]
+	mi := &file_user_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -833,7 +1050,7 @@ func (x *ReleaseQuotaRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReleaseQuotaRequest.ProtoReflect.Descriptor instead.
 func (*ReleaseQuotaRequest) Descriptor() ([]byte, []int) {
-	return file_user_proto_rawDescGZIP(), []int{14}
+	return file_user_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *ReleaseQuotaRequest) GetUserId() int64 {
@@ -867,7 +1084,7 @@ type ReleaseQuotaResponse struct {
 
 func (x *ReleaseQuotaResponse) Reset() {
 	*x = ReleaseQuotaResponse{}
-	mi := &file_user_proto_msgTypes[15]
+	mi := &file_user_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -879,7 +1096,7 @@ func (x *ReleaseQuotaResponse) String() string {
 func (*ReleaseQuotaResponse) ProtoMessage() {}
 
 func (x *ReleaseQuotaResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_user_proto_msgTypes[15]
+	mi := &file_user_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -892,7 +1109,7 @@ func (x *ReleaseQuotaResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReleaseQuotaResponse.ProtoReflect.Descriptor instead.
 func (*ReleaseQuotaResponse) Descriptor() ([]byte, []int) {
-	return file_user_proto_rawDescGZIP(), []int{15}
+	return file_user_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *ReleaseQuotaResponse) GetSuccess() bool {
@@ -903,6 +1120,118 @@ func (x *ReleaseQuotaResponse) GetSuccess() bool {
 }
 
 func (x *ReleaseQuotaResponse) GetReason() string {
+	if x != nil {
+		return x.Reason
+	}
+	return ""
+}
+
+type ReleaseUsedQuotaRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        int64                  `protobuf:"varint,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	ReleaseBytes  int64                  `protobuf:"varint,2,opt,name=release_bytes,json=releaseBytes,proto3" json:"release_bytes,omitempty"`
+	RequestId     string                 `protobuf:"bytes,3,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ReleaseUsedQuotaRequest) Reset() {
+	*x = ReleaseUsedQuotaRequest{}
+	mi := &file_user_proto_msgTypes[20]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ReleaseUsedQuotaRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ReleaseUsedQuotaRequest) ProtoMessage() {}
+
+func (x *ReleaseUsedQuotaRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_user_proto_msgTypes[20]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ReleaseUsedQuotaRequest.ProtoReflect.Descriptor instead.
+func (*ReleaseUsedQuotaRequest) Descriptor() ([]byte, []int) {
+	return file_user_proto_rawDescGZIP(), []int{20}
+}
+
+func (x *ReleaseUsedQuotaRequest) GetUserId() int64 {
+	if x != nil {
+		return x.UserId
+	}
+	return 0
+}
+
+func (x *ReleaseUsedQuotaRequest) GetReleaseBytes() int64 {
+	if x != nil {
+		return x.ReleaseBytes
+	}
+	return 0
+}
+
+func (x *ReleaseUsedQuotaRequest) GetRequestId() string {
+	if x != nil {
+		return x.RequestId
+	}
+	return ""
+}
+
+type ReleaseUsedQuotaResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	Reason        string                 `protobuf:"bytes,2,opt,name=reason,proto3" json:"reason,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ReleaseUsedQuotaResponse) Reset() {
+	*x = ReleaseUsedQuotaResponse{}
+	mi := &file_user_proto_msgTypes[21]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ReleaseUsedQuotaResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ReleaseUsedQuotaResponse) ProtoMessage() {}
+
+func (x *ReleaseUsedQuotaResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_user_proto_msgTypes[21]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ReleaseUsedQuotaResponse.ProtoReflect.Descriptor instead.
+func (*ReleaseUsedQuotaResponse) Descriptor() ([]byte, []int) {
+	return file_user_proto_rawDescGZIP(), []int{21}
+}
+
+func (x *ReleaseUsedQuotaResponse) GetSuccess() bool {
+	if x != nil {
+		return x.Success
+	}
+	return false
+}
+
+func (x *ReleaseUsedQuotaResponse) GetReason() string {
 	if x != nil {
 		return x.Reason
 	}
@@ -929,7 +1258,13 @@ const file_user_proto_rawDesc = "" +
 	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\x12#\n" +
 	"\rrefresh_token\x18\x02 \x01(\tR\frefreshToken\x12\x1d\n" +
 	"\n" +
-	"expires_at\x18\x03 \x01(\x03R\texpiresAt\":\n" +
+	"expires_at\x18\x03 \x01(\x03R\texpiresAt\"M\n" +
+	"\rLogoutRequest\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\x03R\x06userId\x12#\n" +
+	"\rrefresh_token\x18\x02 \x01(\tR\frefreshToken\"O\n" +
+	"\x0eLogoutResponse\x12\x18\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess\x12#\n" +
+	"\rrevoked_count\x18\x02 \x01(\x03R\frevokedCount\":\n" +
 	"\x13RefreshTokenRequest\x12#\n" +
 	"\rrefresh_token\x18\x01 \x01(\tR\frefreshToken\"}\n" +
 	"\x14RefreshTokenResponse\x12!\n" +
@@ -968,7 +1303,15 @@ const file_user_proto_rawDesc = "" +
 	"\x14ReserveQuotaResponse\x12\x18\n" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\x12%\n" +
 	"\x0ereserved_bytes\x18\x02 \x01(\x03R\rreservedBytes\x12\x16\n" +
-	"\x06reason\x18\x03 \x01(\tR\x06reason\"r\n" +
+	"\x06reason\x18\x03 \x01(\tR\x06reason\"b\n" +
+	"\x12CommitQuotaRequest\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\x03R\x06userId\x12\x14\n" +
+	"\x05bytes\x18\x02 \x01(\x03R\x05bytes\x12\x1d\n" +
+	"\n" +
+	"request_id\x18\x03 \x01(\tR\trequestId\"G\n" +
+	"\x13CommitQuotaResponse\x12\x18\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x16\n" +
+	"\x06reason\x18\x02 \x01(\tR\x06reason\"r\n" +
 	"\x13ReleaseQuotaRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\x03R\x06userId\x12#\n" +
 	"\rrelease_bytes\x18\x02 \x01(\x03R\freleaseBytes\x12\x1d\n" +
@@ -976,16 +1319,27 @@ const file_user_proto_rawDesc = "" +
 	"request_id\x18\x03 \x01(\tR\trequestId\"H\n" +
 	"\x14ReleaseQuotaResponse\x12\x18\n" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x16\n" +
-	"\x06reason\x18\x02 \x01(\tR\x06reason2\x85\x04\n" +
+	"\x06reason\x18\x02 \x01(\tR\x06reason\"v\n" +
+	"\x17ReleaseUsedQuotaRequest\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\x03R\x06userId\x12#\n" +
+	"\rrelease_bytes\x18\x02 \x01(\x03R\freleaseBytes\x12\x1d\n" +
+	"\n" +
+	"request_id\x18\x03 \x01(\tR\trequestId\"L\n" +
+	"\x18ReleaseUsedQuotaResponse\x12\x18\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x16\n" +
+	"\x06reason\x18\x02 \x01(\tR\x06reason2\xd1\x05\n" +
 	"\x04User\x129\n" +
 	"\bRegister\x12\x15.user.RegisterRequest\x1a\x16.user.RegisterResponse\x120\n" +
-	"\x05Login\x12\x12.user.LoginRequest\x1a\x13.user.LoginResponse\x12E\n" +
+	"\x05Login\x12\x12.user.LoginRequest\x1a\x13.user.LoginResponse\x123\n" +
+	"\x06Logout\x12\x13.user.LogoutRequest\x1a\x14.user.LogoutResponse\x12E\n" +
 	"\fRefreshToken\x12\x19.user.RefreshTokenRequest\x1a\x1a.user.RefreshTokenResponse\x126\n" +
 	"\aGetUser\x12\x14.user.GetUserRequest\x1a\x15.user.GetUserResponse\x129\n" +
 	"\bGetQuota\x12\x15.user.GetQuotaRequest\x1a\x16.user.GetQuotaResponse\x12H\n" +
 	"\rValidateToken\x12\x1a.user.ValidateTokenRequest\x1a\x1b.user.ValidateTokenResponse\x12E\n" +
-	"\fReserveQuota\x12\x19.user.ReserveQuotaRequest\x1a\x1a.user.ReserveQuotaResponse\x12E\n" +
-	"\fReleaseQuota\x12\x19.user.ReleaseQuotaRequest\x1a\x1a.user.ReleaseQuotaResponseB\bZ\x06./userb\x06proto3"
+	"\fReserveQuota\x12\x19.user.ReserveQuotaRequest\x1a\x1a.user.ReserveQuotaResponse\x12B\n" +
+	"\vCommitQuota\x12\x18.user.CommitQuotaRequest\x1a\x19.user.CommitQuotaResponse\x12E\n" +
+	"\fReleaseQuota\x12\x19.user.ReleaseQuotaRequest\x1a\x1a.user.ReleaseQuotaResponse\x12Q\n" +
+	"\x10ReleaseUsedQuota\x12\x1d.user.ReleaseUsedQuotaRequest\x1a\x1e.user.ReleaseUsedQuotaResponseB\bZ\x06./userb\x06proto3"
 
 var (
 	file_user_proto_rawDescOnce sync.Once
@@ -999,44 +1353,56 @@ func file_user_proto_rawDescGZIP() []byte {
 	return file_user_proto_rawDescData
 }
 
-var file_user_proto_msgTypes = make([]protoimpl.MessageInfo, 16)
+var file_user_proto_msgTypes = make([]protoimpl.MessageInfo, 22)
 var file_user_proto_goTypes = []any{
-	(*RegisterRequest)(nil),       // 0: user.RegisterRequest
-	(*RegisterResponse)(nil),      // 1: user.RegisterResponse
-	(*LoginRequest)(nil),          // 2: user.LoginRequest
-	(*LoginResponse)(nil),         // 3: user.LoginResponse
-	(*RefreshTokenRequest)(nil),   // 4: user.RefreshTokenRequest
-	(*RefreshTokenResponse)(nil),  // 5: user.RefreshTokenResponse
-	(*GetUserRequest)(nil),        // 6: user.GetUserRequest
-	(*GetUserResponse)(nil),       // 7: user.GetUserResponse
-	(*ValidateTokenRequest)(nil),  // 8: user.ValidateTokenRequest
-	(*ValidateTokenResponse)(nil), // 9: user.ValidateTokenResponse
-	(*GetQuotaRequest)(nil),       // 10: user.GetQuotaRequest
-	(*GetQuotaResponse)(nil),      // 11: user.GetQuotaResponse
-	(*ReserveQuotaRequest)(nil),   // 12: user.ReserveQuotaRequest
-	(*ReserveQuotaResponse)(nil),  // 13: user.ReserveQuotaResponse
-	(*ReleaseQuotaRequest)(nil),   // 14: user.ReleaseQuotaRequest
-	(*ReleaseQuotaResponse)(nil),  // 15: user.ReleaseQuotaResponse
+	(*RegisterRequest)(nil),          // 0: user.RegisterRequest
+	(*RegisterResponse)(nil),         // 1: user.RegisterResponse
+	(*LoginRequest)(nil),             // 2: user.LoginRequest
+	(*LoginResponse)(nil),            // 3: user.LoginResponse
+	(*LogoutRequest)(nil),            // 4: user.LogoutRequest
+	(*LogoutResponse)(nil),           // 5: user.LogoutResponse
+	(*RefreshTokenRequest)(nil),      // 6: user.RefreshTokenRequest
+	(*RefreshTokenResponse)(nil),     // 7: user.RefreshTokenResponse
+	(*GetUserRequest)(nil),           // 8: user.GetUserRequest
+	(*GetUserResponse)(nil),          // 9: user.GetUserResponse
+	(*ValidateTokenRequest)(nil),     // 10: user.ValidateTokenRequest
+	(*ValidateTokenResponse)(nil),    // 11: user.ValidateTokenResponse
+	(*GetQuotaRequest)(nil),          // 12: user.GetQuotaRequest
+	(*GetQuotaResponse)(nil),         // 13: user.GetQuotaResponse
+	(*ReserveQuotaRequest)(nil),      // 14: user.ReserveQuotaRequest
+	(*ReserveQuotaResponse)(nil),     // 15: user.ReserveQuotaResponse
+	(*CommitQuotaRequest)(nil),       // 16: user.CommitQuotaRequest
+	(*CommitQuotaResponse)(nil),      // 17: user.CommitQuotaResponse
+	(*ReleaseQuotaRequest)(nil),      // 18: user.ReleaseQuotaRequest
+	(*ReleaseQuotaResponse)(nil),     // 19: user.ReleaseQuotaResponse
+	(*ReleaseUsedQuotaRequest)(nil),  // 20: user.ReleaseUsedQuotaRequest
+	(*ReleaseUsedQuotaResponse)(nil), // 21: user.ReleaseUsedQuotaResponse
 }
 var file_user_proto_depIdxs = []int32{
 	0,  // 0: user.User.Register:input_type -> user.RegisterRequest
 	2,  // 1: user.User.Login:input_type -> user.LoginRequest
-	4,  // 2: user.User.RefreshToken:input_type -> user.RefreshTokenRequest
-	6,  // 3: user.User.GetUser:input_type -> user.GetUserRequest
-	10, // 4: user.User.GetQuota:input_type -> user.GetQuotaRequest
-	8,  // 5: user.User.ValidateToken:input_type -> user.ValidateTokenRequest
-	12, // 6: user.User.ReserveQuota:input_type -> user.ReserveQuotaRequest
-	14, // 7: user.User.ReleaseQuota:input_type -> user.ReleaseQuotaRequest
-	1,  // 8: user.User.Register:output_type -> user.RegisterResponse
-	3,  // 9: user.User.Login:output_type -> user.LoginResponse
-	5,  // 10: user.User.RefreshToken:output_type -> user.RefreshTokenResponse
-	7,  // 11: user.User.GetUser:output_type -> user.GetUserResponse
-	11, // 12: user.User.GetQuota:output_type -> user.GetQuotaResponse
-	9,  // 13: user.User.ValidateToken:output_type -> user.ValidateTokenResponse
-	13, // 14: user.User.ReserveQuota:output_type -> user.ReserveQuotaResponse
-	15, // 15: user.User.ReleaseQuota:output_type -> user.ReleaseQuotaResponse
-	8,  // [8:16] is the sub-list for method output_type
-	0,  // [0:8] is the sub-list for method input_type
+	4,  // 2: user.User.Logout:input_type -> user.LogoutRequest
+	6,  // 3: user.User.RefreshToken:input_type -> user.RefreshTokenRequest
+	8,  // 4: user.User.GetUser:input_type -> user.GetUserRequest
+	12, // 5: user.User.GetQuota:input_type -> user.GetQuotaRequest
+	10, // 6: user.User.ValidateToken:input_type -> user.ValidateTokenRequest
+	14, // 7: user.User.ReserveQuota:input_type -> user.ReserveQuotaRequest
+	16, // 8: user.User.CommitQuota:input_type -> user.CommitQuotaRequest
+	18, // 9: user.User.ReleaseQuota:input_type -> user.ReleaseQuotaRequest
+	20, // 10: user.User.ReleaseUsedQuota:input_type -> user.ReleaseUsedQuotaRequest
+	1,  // 11: user.User.Register:output_type -> user.RegisterResponse
+	3,  // 12: user.User.Login:output_type -> user.LoginResponse
+	5,  // 13: user.User.Logout:output_type -> user.LogoutResponse
+	7,  // 14: user.User.RefreshToken:output_type -> user.RefreshTokenResponse
+	9,  // 15: user.User.GetUser:output_type -> user.GetUserResponse
+	13, // 16: user.User.GetQuota:output_type -> user.GetQuotaResponse
+	11, // 17: user.User.ValidateToken:output_type -> user.ValidateTokenResponse
+	15, // 18: user.User.ReserveQuota:output_type -> user.ReserveQuotaResponse
+	17, // 19: user.User.CommitQuota:output_type -> user.CommitQuotaResponse
+	19, // 20: user.User.ReleaseQuota:output_type -> user.ReleaseQuotaResponse
+	21, // 21: user.User.ReleaseUsedQuota:output_type -> user.ReleaseUsedQuotaResponse
+	11, // [11:22] is the sub-list for method output_type
+	0,  // [0:11] is the sub-list for method input_type
 	0,  // [0:0] is the sub-list for extension type_name
 	0,  // [0:0] is the sub-list for extension extendee
 	0,  // [0:0] is the sub-list for field type_name
@@ -1053,7 +1419,7 @@ func file_user_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_user_proto_rawDesc), len(file_user_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   16,
+			NumMessages:   22,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

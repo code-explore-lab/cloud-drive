@@ -1,0 +1,78 @@
+# CloudDrive 告警规则。
+# 这些规则对应 target.md 第九节要求的"至少提供"的几类告警。
+groups:
+  - name: clouddrive-availability
+    rules:
+      - alert: ServiceDown
+        expr: up{job=~"clouddrive-.*"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "服务不可用：{{ $labels.instance }}"
+          description: "Prometheus 已经连续 1 分钟抓不到该实例的指标。"
+
+  - name: clouddrive-errors
+    rules:
+      - alert: HighHttpErrorRate
+        expr: |
+          sum by (path) (rate(http_server_requests_code_total{code=~"5.."}[5m]))
+            /
+          sum by (path) (rate(http_server_requests_code_total[5m])) > 0.05
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "接口 5xx 比例超过 5%：{{ $labels.path }}"
+          description: "最近 10 分钟该接口的错误率持续高于 5%，需要查看日志中的 request_id。"
+
+      - alert: HighRpcErrorRate
+        expr: |
+          sum by (method) (rate(rpc_server_requests_code_total{code!="0"}[5m]))
+            /
+          sum by (method) (rate(rpc_server_requests_code_total[5m])) > 0.05
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "RPC 错误率偏高：{{ $labels.method }}"
+
+  - name: clouddrive-latency
+    rules:
+      - alert: SlowHttpP95
+        expr: |
+          histogram_quantile(0.95,
+            sum by (le, path) (rate(http_server_requests_duration_ms_bucket[5m]))
+          ) > 2000
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "接口 P95 延迟超过 2s：{{ $labels.path }}"
+
+  - name: clouddrive-storage
+    rules:
+      - alert: StaleUploadTasks
+        expr: clouddrive_upload_active_tasks > 50
+        for: 30m
+        labels:
+          severity: warning
+        annotations:
+          summary: "未完成上传任务过多"
+          description: "超过 50 个上传任务长时间未完成，检查客户端是否在上传中途放弃，以及清理任务是否正常。"
+
+      - alert: ObjectGcBacklog
+        expr: clouddrive_storage_object_gc_backlog > 100
+        for: 30m
+        labels:
+          severity: warning
+        annotations:
+          summary: "对象清理任务积压"
+          description: "待删除对象超过 100 个，说明对象存储删除持续失败，检查 MinIO 可用性与权限。"
+
+      - alert: ObjectGcFailures
+        expr: increase(clouddrive_storage_object_gc_failures_total[1h]) > 10
+        labels:
+          severity: warning
+        annotations:
+          summary: "一小时内对象删除失败超过 10 次"

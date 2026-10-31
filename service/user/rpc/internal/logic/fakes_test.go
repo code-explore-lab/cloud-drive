@@ -3,6 +3,7 @@ package logic
 import (
 	"context"
 	"database/sql"
+	"time"
 
 	"cloud-drive/service/user/model"
 	"cloud-drive/service/user/rpc/internal/config"
@@ -41,6 +42,7 @@ type fakeUsersModel struct {
 	insert            func(ctx context.Context, data *model.Users) (sql.Result, error)
 	update            func(ctx context.Context, data *model.Users) error
 	del               func(ctx context.Context, id uint64) error
+	invalidate        func(ctx context.Context, id uint64, username string, email sql.NullString) error
 }
 
 var _ model.UsersModel = (*fakeUsersModel)(nil)
@@ -59,8 +61,9 @@ func newFakeUsersModel() *fakeUsersModel {
 		insert: func(context.Context, *model.Users) (sql.Result, error) {
 			return fakeResult{id: 1, rows: 1}, nil
 		},
-		update: func(context.Context, *model.Users) error { return nil },
-		del:    func(context.Context, uint64) error { return nil },
+		update:     func(context.Context, *model.Users) error { return nil },
+		del:        func(context.Context, uint64) error { return nil },
+		invalidate: func(context.Context, uint64, string, sql.NullString) error { return nil },
 	}
 }
 
@@ -88,6 +91,14 @@ func (f *fakeUsersModel) Delete(ctx context.Context, id uint64) error {
 	return f.del(ctx, id)
 }
 
+func (f *fakeUsersModel) Invalidate(ctx context.Context, id uint64, username string,
+	email sql.NullString) error {
+	if f.invalidate == nil {
+		return nil
+	}
+	return f.invalidate(ctx, id, username, email)
+}
+
 // ---------------- user_quotas ----------------
 
 type fakeQuotasModel struct {
@@ -97,7 +108,9 @@ type fakeQuotasModel struct {
 	update       func(ctx context.Context, data *model.UserQuotas) error
 	del          func(ctx context.Context, id uint64) error
 	reserveQuota func(ctx context.Context, userId, bytes uint64) (bool, error)
+	commitQuota  func(ctx context.Context, userId, bytes uint64) (bool, error)
 	releaseQuota func(ctx context.Context, userId, bytes uint64) (bool, error)
+	releaseUsed  func(ctx context.Context, userId, bytes uint64) (bool, error)
 }
 
 var _ model.UserQuotasModel = (*fakeQuotasModel)(nil)
@@ -116,7 +129,9 @@ func newFakeQuotasModel() *fakeQuotasModel {
 		update:       func(context.Context, *model.UserQuotas) error { return nil },
 		del:          func(context.Context, uint64) error { return nil },
 		reserveQuota: func(context.Context, uint64, uint64) (bool, error) { return false, nil },
+		commitQuota:  func(context.Context, uint64, uint64) (bool, error) { return false, nil },
 		releaseQuota: func(context.Context, uint64, uint64) (bool, error) { return false, nil },
+		releaseUsed:  func(context.Context, uint64, uint64) (bool, error) { return false, nil },
 	}
 }
 
@@ -144,8 +159,16 @@ func (f *fakeQuotasModel) ReserveQuota(ctx context.Context, userId, bytes uint64
 	return f.reserveQuota(ctx, userId, bytes)
 }
 
+func (f *fakeQuotasModel) CommitQuota(ctx context.Context, userId, bytes uint64) (bool, error) {
+	return f.commitQuota(ctx, userId, bytes)
+}
+
 func (f *fakeQuotasModel) ReleaseQuota(ctx context.Context, userId, bytes uint64) (bool, error) {
 	return f.releaseQuota(ctx, userId, bytes)
+}
+
+func (f *fakeQuotasModel) ReleaseUsedQuota(ctx context.Context, userId, bytes uint64) (bool, error) {
+	return f.releaseUsed(ctx, userId, bytes)
 }
 
 // ---------------- refresh_tokens ----------------
@@ -154,6 +177,7 @@ type fakeTokensModel struct {
 	insert          func(ctx context.Context, data *model.RefreshTokens) (sql.Result, error)
 	findOne         func(ctx context.Context, id uint64) (*model.RefreshTokens, error)
 	findByTokenHash func(ctx context.Context, tokenHash string) (*model.RefreshTokens, error)
+	findActive      func(ctx context.Context, userId uint64, now time.Time) ([]*model.RefreshTokens, error)
 	update          func(ctx context.Context, data *model.RefreshTokens) error
 	del             func(ctx context.Context, id uint64) error
 }
@@ -171,6 +195,9 @@ func newFakeTokensModel() *fakeTokensModel {
 		findByTokenHash: func(context.Context, string) (*model.RefreshTokens, error) {
 			return nil, model.ErrNotFound
 		},
+		findActive: func(context.Context, uint64, time.Time) ([]*model.RefreshTokens, error) {
+			return nil, nil
+		},
 		update: func(context.Context, *model.RefreshTokens) error { return nil },
 		del:    func(context.Context, uint64) error { return nil },
 	}
@@ -186,6 +213,11 @@ func (f *fakeTokensModel) FindOne(ctx context.Context, id uint64) (*model.Refres
 
 func (f *fakeTokensModel) FindOneByTokenHash(ctx context.Context, tokenHash string) (*model.RefreshTokens, error) {
 	return f.findByTokenHash(ctx, tokenHash)
+}
+
+func (f *fakeTokensModel) FindActiveByUser(ctx context.Context, userId uint64,
+	now time.Time) ([]*model.RefreshTokens, error) {
+	return f.findActive(ctx, userId, now)
 }
 
 func (f *fakeTokensModel) Update(ctx context.Context, data *model.RefreshTokens) error {

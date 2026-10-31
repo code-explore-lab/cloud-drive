@@ -5,11 +5,52 @@ package file;
 
 option go_package = "./file";
 
+// File 是文件服务的控制面：文件/目录元数据、权限校验、分享、版本。
 service File {
-  rpc GetFile(GetFileRequest) returns (GetFileResponse);
   rpc CreateFile(CreateFileRequest) returns (CreateFileResponse);
+  rpc GetFile(GetFileRequest) returns (GetFileResponse);
   rpc UpdateFileStatus(UpdateFileStatusRequest) returns (UpdateFileStatusResponse);
+  rpc ListFiles(ListFilesRequest) returns (ListFilesResponse);
+  rpc CreateFolder(CreateFolderRequest) returns (CreateFolderResponse);
+  rpc RenameFile(RenameFileRequest) returns (RenameFileResponse);
+  rpc MoveFile(MoveFileRequest) returns (MoveFileResponse);
   rpc DeleteFile(DeleteFileRequest) returns (DeleteFileResponse);
+  rpc DeleteFolder(DeleteFolderRequest) returns (DeleteFolderResponse);
+
+  // 分享
+  rpc CreateShare(CreateShareRequest) returns (CreateShareResponse);
+  rpc ListShares(ListSharesRequest) returns (ListSharesResponse);
+  rpc RevokeShare(RevokeShareRequest) returns (RevokeShareResponse);
+  rpc AccessShare(AccessShareRequest) returns (AccessShareResponse);
+
+  // 版本
+  rpc AddVersion(AddVersionRequest) returns (AddVersionResponse);
+  rpc ListVersions(ListVersionsRequest) returns (ListVersionsResponse);
+  rpc RestoreVersion(RestoreVersionRequest) returns (RestoreVersionResponse);
+}
+
+// ObjectRef 指向一个需要清理的存储对象。
+message ObjectRef {
+  string object_key = 1;
+  int64 size = 2;
+}
+
+message CreateFileRequest {
+  int64 owner_id = 1;
+  int64 parent_id = 2;
+  string name = 3;
+  int64 size = 4;
+  string content_type = 5;
+  string content_hash = 6;
+  string object_key = 7;
+  string request_id = 8;
+  string status = 9;
+}
+
+message CreateFileResponse {
+  int64 file_id = 1;
+  bool success = 2;
+  bool existed = 3;
 }
 
 message GetFileRequest {
@@ -27,22 +68,7 @@ message GetFileResponse {
   string content_hash = 7;
   string object_key = 8;
   string status = 9;
-}
-
-message CreateFileRequest {
-  int64 owner_id = 1;
-  int64 parent_id = 2;
-  string name = 3;
-  int64 size = 4;
-  string content_type = 5;
-  string content_hash = 6;
-  string object_key = 7;
-  string request_id = 8;
-}
-
-message CreateFileResponse {
-  int64 file_id = 1;
-  bool success = 2;
+  int64 version = 10;
 }
 
 message UpdateFileStatusRequest {
@@ -50,9 +76,71 @@ message UpdateFileStatusRequest {
   int64 owner_id = 2;
   string status = 3;
   string request_id = 4;
+  string object_key = 5;
+  int64 size = 6;
+  string content_hash = 7;
 }
 
 message UpdateFileStatusResponse {
+  bool success = 1;
+  // changed=false 表示状态已经是目标值，调用方无需重复扣减配额。
+  bool changed = 2;
+  string previous_status = 3;
+}
+
+message FileItem {
+  int64 file_id = 1;
+  int64 parent_id = 2;
+  string name = 3;
+  int64 size = 4;
+  string content_type = 5;
+  bool is_folder = 6;
+  string status = 7;
+  int64 created_at = 8;
+  int64 updated_at = 9;
+  int64 version = 10;
+}
+
+message ListFilesRequest {
+  int64 owner_id = 1;
+  int64 parent_id = 2;
+  int64 page = 3;
+  int64 page_size = 4;
+}
+
+message ListFilesResponse {
+  repeated FileItem items = 1;
+  int64 total = 2;
+}
+
+message CreateFolderRequest {
+  int64 owner_id = 1;
+  int64 parent_id = 2;
+  string name = 3;
+}
+
+message CreateFolderResponse {
+  int64 folder_id = 1;
+}
+
+message RenameFileRequest {
+  int64 file_id = 1;
+  int64 owner_id = 2;
+  string name = 3;
+}
+
+message RenameFileResponse {
+  bool success = 1;
+}
+
+message MoveFileRequest {
+  int64 file_id = 1;
+  int64 owner_id = 2;
+  int64 target_parent_id = 3;
+  string name = 4;
+}
+
+message MoveFileResponse {
   bool success = 1;
 }
 
@@ -64,4 +152,131 @@ message DeleteFileRequest {
 
 message DeleteFileResponse {
   bool success = 1;
+  bool changed = 2;
+  int64 released_bytes = 3;
+  repeated ObjectRef objects = 4;
+}
+
+message DeleteFolderRequest {
+  int64 folder_id = 1;
+  int64 owner_id = 2;
+  string request_id = 3;
+}
+
+message DeleteFolderResponse {
+  bool success = 1;
+  bool changed = 2;
+  int64 released_bytes = 3;
+  repeated ObjectRef objects = 4;
+}
+
+message CreateShareRequest {
+  int64 owner_id = 1;
+  int64 file_id = 2;
+  string password = 3;
+  int64 expires_at = 4;
+  int64 max_access_count = 5;
+}
+
+message CreateShareResponse {
+  int64 share_id = 1;
+  string token = 2;
+  int64 expires_at = 3;
+}
+
+message ShareItem {
+  int64 share_id = 1;
+  int64 file_id = 2;
+  string file_name = 3;
+  bool active = 4;
+  bool has_password = 5;
+  int64 expires_at = 6;
+  int64 max_access_count = 7;
+  int64 access_count = 8;
+  int64 created_at = 9;
+}
+
+message ListSharesRequest {
+  int64 owner_id = 1;
+  int64 page = 2;
+  int64 page_size = 3;
+}
+
+message ListSharesResponse {
+  repeated ShareItem items = 1;
+  int64 total = 2;
+}
+
+message RevokeShareRequest {
+  int64 share_id = 1;
+  int64 owner_id = 2;
+}
+
+message RevokeShareResponse {
+  bool success = 1;
+}
+
+message AccessShareRequest {
+  string token = 1;
+  string password = 2;
+}
+
+message AccessShareResponse {
+  bool granted = 1;
+  string reason = 2;
+  int64 share_id = 3;
+  int64 file_id = 4;
+  int64 owner_id = 5;
+  string file_name = 6;
+  int64 size = 7;
+  string content_type = 8;
+  string object_key = 9;
+  string status = 10;
+}
+
+message AddVersionRequest {
+  int64 file_id = 1;
+  int64 owner_id = 2;
+  int64 size = 3;
+  string content_type = 4;
+  string content_hash = 5;
+  string object_key = 6;
+  string request_id = 7;
+}
+
+message AddVersionResponse {
+  int64 version = 1;
+  bool success = 2;
+  bool changed = 3;
+}
+
+message VersionItem {
+  int64 version = 1;
+  int64 size = 2;
+  string content_type = 3;
+  string content_hash = 4;
+  int64 created_at = 5;
+  bool current = 6;
+}
+
+message ListVersionsRequest {
+  int64 file_id = 1;
+  int64 user_id = 2;
+}
+
+message ListVersionsResponse {
+  repeated VersionItem items = 1;
+}
+
+message RestoreVersionRequest {
+  int64 file_id = 1;
+  int64 user_id = 2;
+  int64 version = 3;
+  string request_id = 4;
+}
+
+message RestoreVersionResponse {
+  bool success = 1;
+  bool changed = 2;
+  int64 version = 3;
 }

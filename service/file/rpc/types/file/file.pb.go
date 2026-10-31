@@ -21,6 +21,227 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// ObjectRef 指向一个需要清理的存储对象。
+type ObjectRef struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ObjectKey     string                 `protobuf:"bytes,1,opt,name=object_key,json=objectKey,proto3" json:"object_key,omitempty"`
+	Size          int64                  `protobuf:"varint,2,opt,name=size,proto3" json:"size,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ObjectRef) Reset() {
+	*x = ObjectRef{}
+	mi := &file_file_proto_msgTypes[0]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ObjectRef) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ObjectRef) ProtoMessage() {}
+
+func (x *ObjectRef) ProtoReflect() protoreflect.Message {
+	mi := &file_file_proto_msgTypes[0]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ObjectRef.ProtoReflect.Descriptor instead.
+func (*ObjectRef) Descriptor() ([]byte, []int) {
+	return file_file_proto_rawDescGZIP(), []int{0}
+}
+
+func (x *ObjectRef) GetObjectKey() string {
+	if x != nil {
+		return x.ObjectKey
+	}
+	return ""
+}
+
+func (x *ObjectRef) GetSize() int64 {
+	if x != nil {
+		return x.Size
+	}
+	return 0
+}
+
+type CreateFileRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	OwnerId       int64                  `protobuf:"varint,1,opt,name=owner_id,json=ownerId,proto3" json:"owner_id,omitempty"`
+	ParentId      int64                  `protobuf:"varint,2,opt,name=parent_id,json=parentId,proto3" json:"parent_id,omitempty"`
+	Name          string                 `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
+	Size          int64                  `protobuf:"varint,4,opt,name=size,proto3" json:"size,omitempty"`
+	ContentType   string                 `protobuf:"bytes,5,opt,name=content_type,json=contentType,proto3" json:"content_type,omitempty"`
+	ContentHash   string                 `protobuf:"bytes,6,opt,name=content_hash,json=contentHash,proto3" json:"content_hash,omitempty"`
+	ObjectKey     string                 `protobuf:"bytes,7,opt,name=object_key,json=objectKey,proto3" json:"object_key,omitempty"`
+	RequestId     string                 `protobuf:"bytes,8,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
+	Status        string                 `protobuf:"bytes,9,opt,name=status,proto3" json:"status,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CreateFileRequest) Reset() {
+	*x = CreateFileRequest{}
+	mi := &file_file_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateFileRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateFileRequest) ProtoMessage() {}
+
+func (x *CreateFileRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_file_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateFileRequest.ProtoReflect.Descriptor instead.
+func (*CreateFileRequest) Descriptor() ([]byte, []int) {
+	return file_file_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *CreateFileRequest) GetOwnerId() int64 {
+	if x != nil {
+		return x.OwnerId
+	}
+	return 0
+}
+
+func (x *CreateFileRequest) GetParentId() int64 {
+	if x != nil {
+		return x.ParentId
+	}
+	return 0
+}
+
+func (x *CreateFileRequest) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *CreateFileRequest) GetSize() int64 {
+	if x != nil {
+		return x.Size
+	}
+	return 0
+}
+
+func (x *CreateFileRequest) GetContentType() string {
+	if x != nil {
+		return x.ContentType
+	}
+	return ""
+}
+
+func (x *CreateFileRequest) GetContentHash() string {
+	if x != nil {
+		return x.ContentHash
+	}
+	return ""
+}
+
+func (x *CreateFileRequest) GetObjectKey() string {
+	if x != nil {
+		return x.ObjectKey
+	}
+	return ""
+}
+
+func (x *CreateFileRequest) GetRequestId() string {
+	if x != nil {
+		return x.RequestId
+	}
+	return ""
+}
+
+func (x *CreateFileRequest) GetStatus() string {
+	if x != nil {
+		return x.Status
+	}
+	return ""
+}
+
+type CreateFileResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	FileId        int64                  `protobuf:"varint,1,opt,name=file_id,json=fileId,proto3" json:"file_id,omitempty"`
+	Success       bool                   `protobuf:"varint,2,opt,name=success,proto3" json:"success,omitempty"`
+	Existed       bool                   `protobuf:"varint,3,opt,name=existed,proto3" json:"existed,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CreateFileResponse) Reset() {
+	*x = CreateFileResponse{}
+	mi := &file_file_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateFileResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateFileResponse) ProtoMessage() {}
+
+func (x *CreateFileResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_file_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateFileResponse.ProtoReflect.Descriptor instead.
+func (*CreateFileResponse) Descriptor() ([]byte, []int) {
+	return file_file_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *CreateFileResponse) GetFileId() int64 {
+	if x != nil {
+		return x.FileId
+	}
+	return 0
+}
+
+func (x *CreateFileResponse) GetSuccess() bool {
+	if x != nil {
+		return x.Success
+	}
+	return false
+}
+
+func (x *CreateFileResponse) GetExisted() bool {
+	if x != nil {
+		return x.Existed
+	}
+	return false
+}
+
 type GetFileRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	FileId        int64                  `protobuf:"varint,1,opt,name=file_id,json=fileId,proto3" json:"file_id,omitempty"`
@@ -31,7 +252,7 @@ type GetFileRequest struct {
 
 func (x *GetFileRequest) Reset() {
 	*x = GetFileRequest{}
-	mi := &file_file_proto_msgTypes[0]
+	mi := &file_file_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -43,7 +264,7 @@ func (x *GetFileRequest) String() string {
 func (*GetFileRequest) ProtoMessage() {}
 
 func (x *GetFileRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_file_proto_msgTypes[0]
+	mi := &file_file_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -56,7 +277,7 @@ func (x *GetFileRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetFileRequest.ProtoReflect.Descriptor instead.
 func (*GetFileRequest) Descriptor() ([]byte, []int) {
-	return file_file_proto_rawDescGZIP(), []int{0}
+	return file_file_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *GetFileRequest) GetFileId() int64 {
@@ -84,13 +305,14 @@ type GetFileResponse struct {
 	ContentHash   string                 `protobuf:"bytes,7,opt,name=content_hash,json=contentHash,proto3" json:"content_hash,omitempty"`
 	ObjectKey     string                 `protobuf:"bytes,8,opt,name=object_key,json=objectKey,proto3" json:"object_key,omitempty"`
 	Status        string                 `protobuf:"bytes,9,opt,name=status,proto3" json:"status,omitempty"`
+	Version       int64                  `protobuf:"varint,10,opt,name=version,proto3" json:"version,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *GetFileResponse) Reset() {
 	*x = GetFileResponse{}
-	mi := &file_file_proto_msgTypes[1]
+	mi := &file_file_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -102,7 +324,7 @@ func (x *GetFileResponse) String() string {
 func (*GetFileResponse) ProtoMessage() {}
 
 func (x *GetFileResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_file_proto_msgTypes[1]
+	mi := &file_file_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -115,7 +337,7 @@ func (x *GetFileResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetFileResponse.ProtoReflect.Descriptor instead.
 func (*GetFileResponse) Descriptor() ([]byte, []int) {
-	return file_file_proto_rawDescGZIP(), []int{1}
+	return file_file_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *GetFileResponse) GetFileId() int64 {
@@ -181,156 +403,11 @@ func (x *GetFileResponse) GetStatus() string {
 	return ""
 }
 
-type CreateFileRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	OwnerId       int64                  `protobuf:"varint,1,opt,name=owner_id,json=ownerId,proto3" json:"owner_id,omitempty"`
-	ParentId      int64                  `protobuf:"varint,2,opt,name=parent_id,json=parentId,proto3" json:"parent_id,omitempty"`
-	Name          string                 `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
-	Size          int64                  `protobuf:"varint,4,opt,name=size,proto3" json:"size,omitempty"`
-	ContentType   string                 `protobuf:"bytes,5,opt,name=content_type,json=contentType,proto3" json:"content_type,omitempty"`
-	ContentHash   string                 `protobuf:"bytes,6,opt,name=content_hash,json=contentHash,proto3" json:"content_hash,omitempty"`
-	ObjectKey     string                 `protobuf:"bytes,7,opt,name=object_key,json=objectKey,proto3" json:"object_key,omitempty"`
-	RequestId     string                 `protobuf:"bytes,8,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *CreateFileRequest) Reset() {
-	*x = CreateFileRequest{}
-	mi := &file_file_proto_msgTypes[2]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *CreateFileRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*CreateFileRequest) ProtoMessage() {}
-
-func (x *CreateFileRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_file_proto_msgTypes[2]
+func (x *GetFileResponse) GetVersion() int64 {
 	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use CreateFileRequest.ProtoReflect.Descriptor instead.
-func (*CreateFileRequest) Descriptor() ([]byte, []int) {
-	return file_file_proto_rawDescGZIP(), []int{2}
-}
-
-func (x *CreateFileRequest) GetOwnerId() int64 {
-	if x != nil {
-		return x.OwnerId
+		return x.Version
 	}
 	return 0
-}
-
-func (x *CreateFileRequest) GetParentId() int64 {
-	if x != nil {
-		return x.ParentId
-	}
-	return 0
-}
-
-func (x *CreateFileRequest) GetName() string {
-	if x != nil {
-		return x.Name
-	}
-	return ""
-}
-
-func (x *CreateFileRequest) GetSize() int64 {
-	if x != nil {
-		return x.Size
-	}
-	return 0
-}
-
-func (x *CreateFileRequest) GetContentType() string {
-	if x != nil {
-		return x.ContentType
-	}
-	return ""
-}
-
-func (x *CreateFileRequest) GetContentHash() string {
-	if x != nil {
-		return x.ContentHash
-	}
-	return ""
-}
-
-func (x *CreateFileRequest) GetObjectKey() string {
-	if x != nil {
-		return x.ObjectKey
-	}
-	return ""
-}
-
-func (x *CreateFileRequest) GetRequestId() string {
-	if x != nil {
-		return x.RequestId
-	}
-	return ""
-}
-
-type CreateFileResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	FileId        int64                  `protobuf:"varint,1,opt,name=file_id,json=fileId,proto3" json:"file_id,omitempty"`
-	Success       bool                   `protobuf:"varint,2,opt,name=success,proto3" json:"success,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *CreateFileResponse) Reset() {
-	*x = CreateFileResponse{}
-	mi := &file_file_proto_msgTypes[3]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *CreateFileResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*CreateFileResponse) ProtoMessage() {}
-
-func (x *CreateFileResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_file_proto_msgTypes[3]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use CreateFileResponse.ProtoReflect.Descriptor instead.
-func (*CreateFileResponse) Descriptor() ([]byte, []int) {
-	return file_file_proto_rawDescGZIP(), []int{3}
-}
-
-func (x *CreateFileResponse) GetFileId() int64 {
-	if x != nil {
-		return x.FileId
-	}
-	return 0
-}
-
-func (x *CreateFileResponse) GetSuccess() bool {
-	if x != nil {
-		return x.Success
-	}
-	return false
 }
 
 type UpdateFileStatusRequest struct {
@@ -339,13 +416,16 @@ type UpdateFileStatusRequest struct {
 	OwnerId       int64                  `protobuf:"varint,2,opt,name=owner_id,json=ownerId,proto3" json:"owner_id,omitempty"`
 	Status        string                 `protobuf:"bytes,3,opt,name=status,proto3" json:"status,omitempty"`
 	RequestId     string                 `protobuf:"bytes,4,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
+	ObjectKey     string                 `protobuf:"bytes,5,opt,name=object_key,json=objectKey,proto3" json:"object_key,omitempty"`
+	Size          int64                  `protobuf:"varint,6,opt,name=size,proto3" json:"size,omitempty"`
+	ContentHash   string                 `protobuf:"bytes,7,opt,name=content_hash,json=contentHash,proto3" json:"content_hash,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *UpdateFileStatusRequest) Reset() {
 	*x = UpdateFileStatusRequest{}
-	mi := &file_file_proto_msgTypes[4]
+	mi := &file_file_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -357,7 +437,7 @@ func (x *UpdateFileStatusRequest) String() string {
 func (*UpdateFileStatusRequest) ProtoMessage() {}
 
 func (x *UpdateFileStatusRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_file_proto_msgTypes[4]
+	mi := &file_file_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -370,7 +450,7 @@ func (x *UpdateFileStatusRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateFileStatusRequest.ProtoReflect.Descriptor instead.
 func (*UpdateFileStatusRequest) Descriptor() ([]byte, []int) {
-	return file_file_proto_rawDescGZIP(), []int{4}
+	return file_file_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *UpdateFileStatusRequest) GetFileId() int64 {
@@ -401,16 +481,40 @@ func (x *UpdateFileStatusRequest) GetRequestId() string {
 	return ""
 }
 
+func (x *UpdateFileStatusRequest) GetObjectKey() string {
+	if x != nil {
+		return x.ObjectKey
+	}
+	return ""
+}
+
+func (x *UpdateFileStatusRequest) GetSize() int64 {
+	if x != nil {
+		return x.Size
+	}
+	return 0
+}
+
+func (x *UpdateFileStatusRequest) GetContentHash() string {
+	if x != nil {
+		return x.ContentHash
+	}
+	return ""
+}
+
 type UpdateFileStatusResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state   protoimpl.MessageState `protogen:"open.v1"`
+	Success bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	// changed=false 表示状态已经是目标值，调用方无需重复扣减配额。
+	Changed        bool   `protobuf:"varint,2,opt,name=changed,proto3" json:"changed,omitempty"`
+	PreviousStatus string `protobuf:"bytes,3,opt,name=previous_status,json=previousStatus,proto3" json:"previous_status,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *UpdateFileStatusResponse) Reset() {
 	*x = UpdateFileStatusResponse{}
-	mi := &file_file_proto_msgTypes[5]
+	mi := &file_file_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -422,7 +526,7 @@ func (x *UpdateFileStatusResponse) String() string {
 func (*UpdateFileStatusResponse) ProtoMessage() {}
 
 func (x *UpdateFileStatusResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_file_proto_msgTypes[5]
+	mi := &file_file_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -435,10 +539,580 @@ func (x *UpdateFileStatusResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateFileStatusResponse.ProtoReflect.Descriptor instead.
 func (*UpdateFileStatusResponse) Descriptor() ([]byte, []int) {
-	return file_file_proto_rawDescGZIP(), []int{5}
+	return file_file_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *UpdateFileStatusResponse) GetSuccess() bool {
+	if x != nil {
+		return x.Success
+	}
+	return false
+}
+
+func (x *UpdateFileStatusResponse) GetChanged() bool {
+	if x != nil {
+		return x.Changed
+	}
+	return false
+}
+
+func (x *UpdateFileStatusResponse) GetPreviousStatus() string {
+	if x != nil {
+		return x.PreviousStatus
+	}
+	return ""
+}
+
+type FileItem struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	FileId        int64                  `protobuf:"varint,1,opt,name=file_id,json=fileId,proto3" json:"file_id,omitempty"`
+	ParentId      int64                  `protobuf:"varint,2,opt,name=parent_id,json=parentId,proto3" json:"parent_id,omitempty"`
+	Name          string                 `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
+	Size          int64                  `protobuf:"varint,4,opt,name=size,proto3" json:"size,omitempty"`
+	ContentType   string                 `protobuf:"bytes,5,opt,name=content_type,json=contentType,proto3" json:"content_type,omitempty"`
+	IsFolder      bool                   `protobuf:"varint,6,opt,name=is_folder,json=isFolder,proto3" json:"is_folder,omitempty"`
+	Status        string                 `protobuf:"bytes,7,opt,name=status,proto3" json:"status,omitempty"`
+	CreatedAt     int64                  `protobuf:"varint,8,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	UpdatedAt     int64                  `protobuf:"varint,9,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
+	Version       int64                  `protobuf:"varint,10,opt,name=version,proto3" json:"version,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *FileItem) Reset() {
+	*x = FileItem{}
+	mi := &file_file_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *FileItem) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*FileItem) ProtoMessage() {}
+
+func (x *FileItem) ProtoReflect() protoreflect.Message {
+	mi := &file_file_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use FileItem.ProtoReflect.Descriptor instead.
+func (*FileItem) Descriptor() ([]byte, []int) {
+	return file_file_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *FileItem) GetFileId() int64 {
+	if x != nil {
+		return x.FileId
+	}
+	return 0
+}
+
+func (x *FileItem) GetParentId() int64 {
+	if x != nil {
+		return x.ParentId
+	}
+	return 0
+}
+
+func (x *FileItem) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *FileItem) GetSize() int64 {
+	if x != nil {
+		return x.Size
+	}
+	return 0
+}
+
+func (x *FileItem) GetContentType() string {
+	if x != nil {
+		return x.ContentType
+	}
+	return ""
+}
+
+func (x *FileItem) GetIsFolder() bool {
+	if x != nil {
+		return x.IsFolder
+	}
+	return false
+}
+
+func (x *FileItem) GetStatus() string {
+	if x != nil {
+		return x.Status
+	}
+	return ""
+}
+
+func (x *FileItem) GetCreatedAt() int64 {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return 0
+}
+
+func (x *FileItem) GetUpdatedAt() int64 {
+	if x != nil {
+		return x.UpdatedAt
+	}
+	return 0
+}
+
+func (x *FileItem) GetVersion() int64 {
+	if x != nil {
+		return x.Version
+	}
+	return 0
+}
+
+type ListFilesRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	OwnerId       int64                  `protobuf:"varint,1,opt,name=owner_id,json=ownerId,proto3" json:"owner_id,omitempty"`
+	ParentId      int64                  `protobuf:"varint,2,opt,name=parent_id,json=parentId,proto3" json:"parent_id,omitempty"`
+	Page          int64                  `protobuf:"varint,3,opt,name=page,proto3" json:"page,omitempty"`
+	PageSize      int64                  `protobuf:"varint,4,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListFilesRequest) Reset() {
+	*x = ListFilesRequest{}
+	mi := &file_file_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListFilesRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListFilesRequest) ProtoMessage() {}
+
+func (x *ListFilesRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_file_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListFilesRequest.ProtoReflect.Descriptor instead.
+func (*ListFilesRequest) Descriptor() ([]byte, []int) {
+	return file_file_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *ListFilesRequest) GetOwnerId() int64 {
+	if x != nil {
+		return x.OwnerId
+	}
+	return 0
+}
+
+func (x *ListFilesRequest) GetParentId() int64 {
+	if x != nil {
+		return x.ParentId
+	}
+	return 0
+}
+
+func (x *ListFilesRequest) GetPage() int64 {
+	if x != nil {
+		return x.Page
+	}
+	return 0
+}
+
+func (x *ListFilesRequest) GetPageSize() int64 {
+	if x != nil {
+		return x.PageSize
+	}
+	return 0
+}
+
+type ListFilesResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Items         []*FileItem            `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
+	Total         int64                  `protobuf:"varint,2,opt,name=total,proto3" json:"total,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListFilesResponse) Reset() {
+	*x = ListFilesResponse{}
+	mi := &file_file_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListFilesResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListFilesResponse) ProtoMessage() {}
+
+func (x *ListFilesResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_file_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListFilesResponse.ProtoReflect.Descriptor instead.
+func (*ListFilesResponse) Descriptor() ([]byte, []int) {
+	return file_file_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *ListFilesResponse) GetItems() []*FileItem {
+	if x != nil {
+		return x.Items
+	}
+	return nil
+}
+
+func (x *ListFilesResponse) GetTotal() int64 {
+	if x != nil {
+		return x.Total
+	}
+	return 0
+}
+
+type CreateFolderRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	OwnerId       int64                  `protobuf:"varint,1,opt,name=owner_id,json=ownerId,proto3" json:"owner_id,omitempty"`
+	ParentId      int64                  `protobuf:"varint,2,opt,name=parent_id,json=parentId,proto3" json:"parent_id,omitempty"`
+	Name          string                 `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CreateFolderRequest) Reset() {
+	*x = CreateFolderRequest{}
+	mi := &file_file_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateFolderRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateFolderRequest) ProtoMessage() {}
+
+func (x *CreateFolderRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_file_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateFolderRequest.ProtoReflect.Descriptor instead.
+func (*CreateFolderRequest) Descriptor() ([]byte, []int) {
+	return file_file_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *CreateFolderRequest) GetOwnerId() int64 {
+	if x != nil {
+		return x.OwnerId
+	}
+	return 0
+}
+
+func (x *CreateFolderRequest) GetParentId() int64 {
+	if x != nil {
+		return x.ParentId
+	}
+	return 0
+}
+
+func (x *CreateFolderRequest) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+type CreateFolderResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	FolderId      int64                  `protobuf:"varint,1,opt,name=folder_id,json=folderId,proto3" json:"folder_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CreateFolderResponse) Reset() {
+	*x = CreateFolderResponse{}
+	mi := &file_file_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateFolderResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateFolderResponse) ProtoMessage() {}
+
+func (x *CreateFolderResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_file_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateFolderResponse.ProtoReflect.Descriptor instead.
+func (*CreateFolderResponse) Descriptor() ([]byte, []int) {
+	return file_file_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *CreateFolderResponse) GetFolderId() int64 {
+	if x != nil {
+		return x.FolderId
+	}
+	return 0
+}
+
+type RenameFileRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	FileId        int64                  `protobuf:"varint,1,opt,name=file_id,json=fileId,proto3" json:"file_id,omitempty"`
+	OwnerId       int64                  `protobuf:"varint,2,opt,name=owner_id,json=ownerId,proto3" json:"owner_id,omitempty"`
+	Name          string                 `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RenameFileRequest) Reset() {
+	*x = RenameFileRequest{}
+	mi := &file_file_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RenameFileRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RenameFileRequest) ProtoMessage() {}
+
+func (x *RenameFileRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_file_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RenameFileRequest.ProtoReflect.Descriptor instead.
+func (*RenameFileRequest) Descriptor() ([]byte, []int) {
+	return file_file_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *RenameFileRequest) GetFileId() int64 {
+	if x != nil {
+		return x.FileId
+	}
+	return 0
+}
+
+func (x *RenameFileRequest) GetOwnerId() int64 {
+	if x != nil {
+		return x.OwnerId
+	}
+	return 0
+}
+
+func (x *RenameFileRequest) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+type RenameFileResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RenameFileResponse) Reset() {
+	*x = RenameFileResponse{}
+	mi := &file_file_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RenameFileResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RenameFileResponse) ProtoMessage() {}
+
+func (x *RenameFileResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_file_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RenameFileResponse.ProtoReflect.Descriptor instead.
+func (*RenameFileResponse) Descriptor() ([]byte, []int) {
+	return file_file_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *RenameFileResponse) GetSuccess() bool {
+	if x != nil {
+		return x.Success
+	}
+	return false
+}
+
+type MoveFileRequest struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	FileId         int64                  `protobuf:"varint,1,opt,name=file_id,json=fileId,proto3" json:"file_id,omitempty"`
+	OwnerId        int64                  `protobuf:"varint,2,opt,name=owner_id,json=ownerId,proto3" json:"owner_id,omitempty"`
+	TargetParentId int64                  `protobuf:"varint,3,opt,name=target_parent_id,json=targetParentId,proto3" json:"target_parent_id,omitempty"`
+	Name           string                 `protobuf:"bytes,4,opt,name=name,proto3" json:"name,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *MoveFileRequest) Reset() {
+	*x = MoveFileRequest{}
+	mi := &file_file_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *MoveFileRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MoveFileRequest) ProtoMessage() {}
+
+func (x *MoveFileRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_file_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use MoveFileRequest.ProtoReflect.Descriptor instead.
+func (*MoveFileRequest) Descriptor() ([]byte, []int) {
+	return file_file_proto_rawDescGZIP(), []int{14}
+}
+
+func (x *MoveFileRequest) GetFileId() int64 {
+	if x != nil {
+		return x.FileId
+	}
+	return 0
+}
+
+func (x *MoveFileRequest) GetOwnerId() int64 {
+	if x != nil {
+		return x.OwnerId
+	}
+	return 0
+}
+
+func (x *MoveFileRequest) GetTargetParentId() int64 {
+	if x != nil {
+		return x.TargetParentId
+	}
+	return 0
+}
+
+func (x *MoveFileRequest) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+type MoveFileResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *MoveFileResponse) Reset() {
+	*x = MoveFileResponse{}
+	mi := &file_file_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *MoveFileResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MoveFileResponse) ProtoMessage() {}
+
+func (x *MoveFileResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_file_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use MoveFileResponse.ProtoReflect.Descriptor instead.
+func (*MoveFileResponse) Descriptor() ([]byte, []int) {
+	return file_file_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *MoveFileResponse) GetSuccess() bool {
 	if x != nil {
 		return x.Success
 	}
@@ -456,7 +1130,7 @@ type DeleteFileRequest struct {
 
 func (x *DeleteFileRequest) Reset() {
 	*x = DeleteFileRequest{}
-	mi := &file_file_proto_msgTypes[6]
+	mi := &file_file_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -468,7 +1142,7 @@ func (x *DeleteFileRequest) String() string {
 func (*DeleteFileRequest) ProtoMessage() {}
 
 func (x *DeleteFileRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_file_proto_msgTypes[6]
+	mi := &file_file_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -481,7 +1155,7 @@ func (x *DeleteFileRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteFileRequest.ProtoReflect.Descriptor instead.
 func (*DeleteFileRequest) Descriptor() ([]byte, []int) {
-	return file_file_proto_rawDescGZIP(), []int{6}
+	return file_file_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *DeleteFileRequest) GetFileId() int64 {
@@ -508,13 +1182,16 @@ func (x *DeleteFileRequest) GetRequestId() string {
 type DeleteFileResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	Changed       bool                   `protobuf:"varint,2,opt,name=changed,proto3" json:"changed,omitempty"`
+	ReleasedBytes int64                  `protobuf:"varint,3,opt,name=released_bytes,json=releasedBytes,proto3" json:"released_bytes,omitempty"`
+	Objects       []*ObjectRef           `protobuf:"bytes,4,rep,name=objects,proto3" json:"objects,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *DeleteFileResponse) Reset() {
 	*x = DeleteFileResponse{}
-	mi := &file_file_proto_msgTypes[7]
+	mi := &file_file_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -526,7 +1203,7 @@ func (x *DeleteFileResponse) String() string {
 func (*DeleteFileResponse) ProtoMessage() {}
 
 func (x *DeleteFileResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_file_proto_msgTypes[7]
+	mi := &file_file_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -539,7 +1216,7 @@ func (x *DeleteFileResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteFileResponse.ProtoReflect.Descriptor instead.
 func (*DeleteFileResponse) Descriptor() ([]byte, []int) {
-	return file_file_proto_rawDescGZIP(), []int{7}
+	return file_file_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *DeleteFileResponse) GetSuccess() bool {
@@ -549,26 +1226,1245 @@ func (x *DeleteFileResponse) GetSuccess() bool {
 	return false
 }
 
+func (x *DeleteFileResponse) GetChanged() bool {
+	if x != nil {
+		return x.Changed
+	}
+	return false
+}
+
+func (x *DeleteFileResponse) GetReleasedBytes() int64 {
+	if x != nil {
+		return x.ReleasedBytes
+	}
+	return 0
+}
+
+func (x *DeleteFileResponse) GetObjects() []*ObjectRef {
+	if x != nil {
+		return x.Objects
+	}
+	return nil
+}
+
+type DeleteFolderRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	FolderId      int64                  `protobuf:"varint,1,opt,name=folder_id,json=folderId,proto3" json:"folder_id,omitempty"`
+	OwnerId       int64                  `protobuf:"varint,2,opt,name=owner_id,json=ownerId,proto3" json:"owner_id,omitempty"`
+	RequestId     string                 `protobuf:"bytes,3,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteFolderRequest) Reset() {
+	*x = DeleteFolderRequest{}
+	mi := &file_file_proto_msgTypes[18]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteFolderRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteFolderRequest) ProtoMessage() {}
+
+func (x *DeleteFolderRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_file_proto_msgTypes[18]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteFolderRequest.ProtoReflect.Descriptor instead.
+func (*DeleteFolderRequest) Descriptor() ([]byte, []int) {
+	return file_file_proto_rawDescGZIP(), []int{18}
+}
+
+func (x *DeleteFolderRequest) GetFolderId() int64 {
+	if x != nil {
+		return x.FolderId
+	}
+	return 0
+}
+
+func (x *DeleteFolderRequest) GetOwnerId() int64 {
+	if x != nil {
+		return x.OwnerId
+	}
+	return 0
+}
+
+func (x *DeleteFolderRequest) GetRequestId() string {
+	if x != nil {
+		return x.RequestId
+	}
+	return ""
+}
+
+type DeleteFolderResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	Changed       bool                   `protobuf:"varint,2,opt,name=changed,proto3" json:"changed,omitempty"`
+	ReleasedBytes int64                  `protobuf:"varint,3,opt,name=released_bytes,json=releasedBytes,proto3" json:"released_bytes,omitempty"`
+	Objects       []*ObjectRef           `protobuf:"bytes,4,rep,name=objects,proto3" json:"objects,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DeleteFolderResponse) Reset() {
+	*x = DeleteFolderResponse{}
+	mi := &file_file_proto_msgTypes[19]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DeleteFolderResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DeleteFolderResponse) ProtoMessage() {}
+
+func (x *DeleteFolderResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_file_proto_msgTypes[19]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DeleteFolderResponse.ProtoReflect.Descriptor instead.
+func (*DeleteFolderResponse) Descriptor() ([]byte, []int) {
+	return file_file_proto_rawDescGZIP(), []int{19}
+}
+
+func (x *DeleteFolderResponse) GetSuccess() bool {
+	if x != nil {
+		return x.Success
+	}
+	return false
+}
+
+func (x *DeleteFolderResponse) GetChanged() bool {
+	if x != nil {
+		return x.Changed
+	}
+	return false
+}
+
+func (x *DeleteFolderResponse) GetReleasedBytes() int64 {
+	if x != nil {
+		return x.ReleasedBytes
+	}
+	return 0
+}
+
+func (x *DeleteFolderResponse) GetObjects() []*ObjectRef {
+	if x != nil {
+		return x.Objects
+	}
+	return nil
+}
+
+type CreateShareRequest struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	OwnerId        int64                  `protobuf:"varint,1,opt,name=owner_id,json=ownerId,proto3" json:"owner_id,omitempty"`
+	FileId         int64                  `protobuf:"varint,2,opt,name=file_id,json=fileId,proto3" json:"file_id,omitempty"`
+	Password       string                 `protobuf:"bytes,3,opt,name=password,proto3" json:"password,omitempty"`
+	ExpiresAt      int64                  `protobuf:"varint,4,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty"`
+	MaxAccessCount int64                  `protobuf:"varint,5,opt,name=max_access_count,json=maxAccessCount,proto3" json:"max_access_count,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *CreateShareRequest) Reset() {
+	*x = CreateShareRequest{}
+	mi := &file_file_proto_msgTypes[20]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateShareRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateShareRequest) ProtoMessage() {}
+
+func (x *CreateShareRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_file_proto_msgTypes[20]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateShareRequest.ProtoReflect.Descriptor instead.
+func (*CreateShareRequest) Descriptor() ([]byte, []int) {
+	return file_file_proto_rawDescGZIP(), []int{20}
+}
+
+func (x *CreateShareRequest) GetOwnerId() int64 {
+	if x != nil {
+		return x.OwnerId
+	}
+	return 0
+}
+
+func (x *CreateShareRequest) GetFileId() int64 {
+	if x != nil {
+		return x.FileId
+	}
+	return 0
+}
+
+func (x *CreateShareRequest) GetPassword() string {
+	if x != nil {
+		return x.Password
+	}
+	return ""
+}
+
+func (x *CreateShareRequest) GetExpiresAt() int64 {
+	if x != nil {
+		return x.ExpiresAt
+	}
+	return 0
+}
+
+func (x *CreateShareRequest) GetMaxAccessCount() int64 {
+	if x != nil {
+		return x.MaxAccessCount
+	}
+	return 0
+}
+
+type CreateShareResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ShareId       int64                  `protobuf:"varint,1,opt,name=share_id,json=shareId,proto3" json:"share_id,omitempty"`
+	Token         string                 `protobuf:"bytes,2,opt,name=token,proto3" json:"token,omitempty"`
+	ExpiresAt     int64                  `protobuf:"varint,3,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CreateShareResponse) Reset() {
+	*x = CreateShareResponse{}
+	mi := &file_file_proto_msgTypes[21]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateShareResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateShareResponse) ProtoMessage() {}
+
+func (x *CreateShareResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_file_proto_msgTypes[21]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateShareResponse.ProtoReflect.Descriptor instead.
+func (*CreateShareResponse) Descriptor() ([]byte, []int) {
+	return file_file_proto_rawDescGZIP(), []int{21}
+}
+
+func (x *CreateShareResponse) GetShareId() int64 {
+	if x != nil {
+		return x.ShareId
+	}
+	return 0
+}
+
+func (x *CreateShareResponse) GetToken() string {
+	if x != nil {
+		return x.Token
+	}
+	return ""
+}
+
+func (x *CreateShareResponse) GetExpiresAt() int64 {
+	if x != nil {
+		return x.ExpiresAt
+	}
+	return 0
+}
+
+type ShareItem struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	ShareId        int64                  `protobuf:"varint,1,opt,name=share_id,json=shareId,proto3" json:"share_id,omitempty"`
+	FileId         int64                  `protobuf:"varint,2,opt,name=file_id,json=fileId,proto3" json:"file_id,omitempty"`
+	FileName       string                 `protobuf:"bytes,3,opt,name=file_name,json=fileName,proto3" json:"file_name,omitempty"`
+	Active         bool                   `protobuf:"varint,4,opt,name=active,proto3" json:"active,omitempty"`
+	HasPassword    bool                   `protobuf:"varint,5,opt,name=has_password,json=hasPassword,proto3" json:"has_password,omitempty"`
+	ExpiresAt      int64                  `protobuf:"varint,6,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty"`
+	MaxAccessCount int64                  `protobuf:"varint,7,opt,name=max_access_count,json=maxAccessCount,proto3" json:"max_access_count,omitempty"`
+	AccessCount    int64                  `protobuf:"varint,8,opt,name=access_count,json=accessCount,proto3" json:"access_count,omitempty"`
+	CreatedAt      int64                  `protobuf:"varint,9,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *ShareItem) Reset() {
+	*x = ShareItem{}
+	mi := &file_file_proto_msgTypes[22]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ShareItem) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ShareItem) ProtoMessage() {}
+
+func (x *ShareItem) ProtoReflect() protoreflect.Message {
+	mi := &file_file_proto_msgTypes[22]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ShareItem.ProtoReflect.Descriptor instead.
+func (*ShareItem) Descriptor() ([]byte, []int) {
+	return file_file_proto_rawDescGZIP(), []int{22}
+}
+
+func (x *ShareItem) GetShareId() int64 {
+	if x != nil {
+		return x.ShareId
+	}
+	return 0
+}
+
+func (x *ShareItem) GetFileId() int64 {
+	if x != nil {
+		return x.FileId
+	}
+	return 0
+}
+
+func (x *ShareItem) GetFileName() string {
+	if x != nil {
+		return x.FileName
+	}
+	return ""
+}
+
+func (x *ShareItem) GetActive() bool {
+	if x != nil {
+		return x.Active
+	}
+	return false
+}
+
+func (x *ShareItem) GetHasPassword() bool {
+	if x != nil {
+		return x.HasPassword
+	}
+	return false
+}
+
+func (x *ShareItem) GetExpiresAt() int64 {
+	if x != nil {
+		return x.ExpiresAt
+	}
+	return 0
+}
+
+func (x *ShareItem) GetMaxAccessCount() int64 {
+	if x != nil {
+		return x.MaxAccessCount
+	}
+	return 0
+}
+
+func (x *ShareItem) GetAccessCount() int64 {
+	if x != nil {
+		return x.AccessCount
+	}
+	return 0
+}
+
+func (x *ShareItem) GetCreatedAt() int64 {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return 0
+}
+
+type ListSharesRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	OwnerId       int64                  `protobuf:"varint,1,opt,name=owner_id,json=ownerId,proto3" json:"owner_id,omitempty"`
+	Page          int64                  `protobuf:"varint,2,opt,name=page,proto3" json:"page,omitempty"`
+	PageSize      int64                  `protobuf:"varint,3,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListSharesRequest) Reset() {
+	*x = ListSharesRequest{}
+	mi := &file_file_proto_msgTypes[23]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListSharesRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListSharesRequest) ProtoMessage() {}
+
+func (x *ListSharesRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_file_proto_msgTypes[23]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListSharesRequest.ProtoReflect.Descriptor instead.
+func (*ListSharesRequest) Descriptor() ([]byte, []int) {
+	return file_file_proto_rawDescGZIP(), []int{23}
+}
+
+func (x *ListSharesRequest) GetOwnerId() int64 {
+	if x != nil {
+		return x.OwnerId
+	}
+	return 0
+}
+
+func (x *ListSharesRequest) GetPage() int64 {
+	if x != nil {
+		return x.Page
+	}
+	return 0
+}
+
+func (x *ListSharesRequest) GetPageSize() int64 {
+	if x != nil {
+		return x.PageSize
+	}
+	return 0
+}
+
+type ListSharesResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Items         []*ShareItem           `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
+	Total         int64                  `protobuf:"varint,2,opt,name=total,proto3" json:"total,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListSharesResponse) Reset() {
+	*x = ListSharesResponse{}
+	mi := &file_file_proto_msgTypes[24]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListSharesResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListSharesResponse) ProtoMessage() {}
+
+func (x *ListSharesResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_file_proto_msgTypes[24]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListSharesResponse.ProtoReflect.Descriptor instead.
+func (*ListSharesResponse) Descriptor() ([]byte, []int) {
+	return file_file_proto_rawDescGZIP(), []int{24}
+}
+
+func (x *ListSharesResponse) GetItems() []*ShareItem {
+	if x != nil {
+		return x.Items
+	}
+	return nil
+}
+
+func (x *ListSharesResponse) GetTotal() int64 {
+	if x != nil {
+		return x.Total
+	}
+	return 0
+}
+
+type RevokeShareRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ShareId       int64                  `protobuf:"varint,1,opt,name=share_id,json=shareId,proto3" json:"share_id,omitempty"`
+	OwnerId       int64                  `protobuf:"varint,2,opt,name=owner_id,json=ownerId,proto3" json:"owner_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RevokeShareRequest) Reset() {
+	*x = RevokeShareRequest{}
+	mi := &file_file_proto_msgTypes[25]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RevokeShareRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RevokeShareRequest) ProtoMessage() {}
+
+func (x *RevokeShareRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_file_proto_msgTypes[25]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RevokeShareRequest.ProtoReflect.Descriptor instead.
+func (*RevokeShareRequest) Descriptor() ([]byte, []int) {
+	return file_file_proto_rawDescGZIP(), []int{25}
+}
+
+func (x *RevokeShareRequest) GetShareId() int64 {
+	if x != nil {
+		return x.ShareId
+	}
+	return 0
+}
+
+func (x *RevokeShareRequest) GetOwnerId() int64 {
+	if x != nil {
+		return x.OwnerId
+	}
+	return 0
+}
+
+type RevokeShareResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RevokeShareResponse) Reset() {
+	*x = RevokeShareResponse{}
+	mi := &file_file_proto_msgTypes[26]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RevokeShareResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RevokeShareResponse) ProtoMessage() {}
+
+func (x *RevokeShareResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_file_proto_msgTypes[26]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RevokeShareResponse.ProtoReflect.Descriptor instead.
+func (*RevokeShareResponse) Descriptor() ([]byte, []int) {
+	return file_file_proto_rawDescGZIP(), []int{26}
+}
+
+func (x *RevokeShareResponse) GetSuccess() bool {
+	if x != nil {
+		return x.Success
+	}
+	return false
+}
+
+type AccessShareRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Token         string                 `protobuf:"bytes,1,opt,name=token,proto3" json:"token,omitempty"`
+	Password      string                 `protobuf:"bytes,2,opt,name=password,proto3" json:"password,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AccessShareRequest) Reset() {
+	*x = AccessShareRequest{}
+	mi := &file_file_proto_msgTypes[27]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AccessShareRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AccessShareRequest) ProtoMessage() {}
+
+func (x *AccessShareRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_file_proto_msgTypes[27]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AccessShareRequest.ProtoReflect.Descriptor instead.
+func (*AccessShareRequest) Descriptor() ([]byte, []int) {
+	return file_file_proto_rawDescGZIP(), []int{27}
+}
+
+func (x *AccessShareRequest) GetToken() string {
+	if x != nil {
+		return x.Token
+	}
+	return ""
+}
+
+func (x *AccessShareRequest) GetPassword() string {
+	if x != nil {
+		return x.Password
+	}
+	return ""
+}
+
+type AccessShareResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Granted       bool                   `protobuf:"varint,1,opt,name=granted,proto3" json:"granted,omitempty"`
+	Reason        string                 `protobuf:"bytes,2,opt,name=reason,proto3" json:"reason,omitempty"`
+	ShareId       int64                  `protobuf:"varint,3,opt,name=share_id,json=shareId,proto3" json:"share_id,omitempty"`
+	FileId        int64                  `protobuf:"varint,4,opt,name=file_id,json=fileId,proto3" json:"file_id,omitempty"`
+	OwnerId       int64                  `protobuf:"varint,5,opt,name=owner_id,json=ownerId,proto3" json:"owner_id,omitempty"`
+	FileName      string                 `protobuf:"bytes,6,opt,name=file_name,json=fileName,proto3" json:"file_name,omitempty"`
+	Size          int64                  `protobuf:"varint,7,opt,name=size,proto3" json:"size,omitempty"`
+	ContentType   string                 `protobuf:"bytes,8,opt,name=content_type,json=contentType,proto3" json:"content_type,omitempty"`
+	ObjectKey     string                 `protobuf:"bytes,9,opt,name=object_key,json=objectKey,proto3" json:"object_key,omitempty"`
+	Status        string                 `protobuf:"bytes,10,opt,name=status,proto3" json:"status,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AccessShareResponse) Reset() {
+	*x = AccessShareResponse{}
+	mi := &file_file_proto_msgTypes[28]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AccessShareResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AccessShareResponse) ProtoMessage() {}
+
+func (x *AccessShareResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_file_proto_msgTypes[28]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AccessShareResponse.ProtoReflect.Descriptor instead.
+func (*AccessShareResponse) Descriptor() ([]byte, []int) {
+	return file_file_proto_rawDescGZIP(), []int{28}
+}
+
+func (x *AccessShareResponse) GetGranted() bool {
+	if x != nil {
+		return x.Granted
+	}
+	return false
+}
+
+func (x *AccessShareResponse) GetReason() string {
+	if x != nil {
+		return x.Reason
+	}
+	return ""
+}
+
+func (x *AccessShareResponse) GetShareId() int64 {
+	if x != nil {
+		return x.ShareId
+	}
+	return 0
+}
+
+func (x *AccessShareResponse) GetFileId() int64 {
+	if x != nil {
+		return x.FileId
+	}
+	return 0
+}
+
+func (x *AccessShareResponse) GetOwnerId() int64 {
+	if x != nil {
+		return x.OwnerId
+	}
+	return 0
+}
+
+func (x *AccessShareResponse) GetFileName() string {
+	if x != nil {
+		return x.FileName
+	}
+	return ""
+}
+
+func (x *AccessShareResponse) GetSize() int64 {
+	if x != nil {
+		return x.Size
+	}
+	return 0
+}
+
+func (x *AccessShareResponse) GetContentType() string {
+	if x != nil {
+		return x.ContentType
+	}
+	return ""
+}
+
+func (x *AccessShareResponse) GetObjectKey() string {
+	if x != nil {
+		return x.ObjectKey
+	}
+	return ""
+}
+
+func (x *AccessShareResponse) GetStatus() string {
+	if x != nil {
+		return x.Status
+	}
+	return ""
+}
+
+type AddVersionRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	FileId        int64                  `protobuf:"varint,1,opt,name=file_id,json=fileId,proto3" json:"file_id,omitempty"`
+	OwnerId       int64                  `protobuf:"varint,2,opt,name=owner_id,json=ownerId,proto3" json:"owner_id,omitempty"`
+	Size          int64                  `protobuf:"varint,3,opt,name=size,proto3" json:"size,omitempty"`
+	ContentType   string                 `protobuf:"bytes,4,opt,name=content_type,json=contentType,proto3" json:"content_type,omitempty"`
+	ContentHash   string                 `protobuf:"bytes,5,opt,name=content_hash,json=contentHash,proto3" json:"content_hash,omitempty"`
+	ObjectKey     string                 `protobuf:"bytes,6,opt,name=object_key,json=objectKey,proto3" json:"object_key,omitempty"`
+	RequestId     string                 `protobuf:"bytes,7,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AddVersionRequest) Reset() {
+	*x = AddVersionRequest{}
+	mi := &file_file_proto_msgTypes[29]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AddVersionRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AddVersionRequest) ProtoMessage() {}
+
+func (x *AddVersionRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_file_proto_msgTypes[29]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AddVersionRequest.ProtoReflect.Descriptor instead.
+func (*AddVersionRequest) Descriptor() ([]byte, []int) {
+	return file_file_proto_rawDescGZIP(), []int{29}
+}
+
+func (x *AddVersionRequest) GetFileId() int64 {
+	if x != nil {
+		return x.FileId
+	}
+	return 0
+}
+
+func (x *AddVersionRequest) GetOwnerId() int64 {
+	if x != nil {
+		return x.OwnerId
+	}
+	return 0
+}
+
+func (x *AddVersionRequest) GetSize() int64 {
+	if x != nil {
+		return x.Size
+	}
+	return 0
+}
+
+func (x *AddVersionRequest) GetContentType() string {
+	if x != nil {
+		return x.ContentType
+	}
+	return ""
+}
+
+func (x *AddVersionRequest) GetContentHash() string {
+	if x != nil {
+		return x.ContentHash
+	}
+	return ""
+}
+
+func (x *AddVersionRequest) GetObjectKey() string {
+	if x != nil {
+		return x.ObjectKey
+	}
+	return ""
+}
+
+func (x *AddVersionRequest) GetRequestId() string {
+	if x != nil {
+		return x.RequestId
+	}
+	return ""
+}
+
+type AddVersionResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Version       int64                  `protobuf:"varint,1,opt,name=version,proto3" json:"version,omitempty"`
+	Success       bool                   `protobuf:"varint,2,opt,name=success,proto3" json:"success,omitempty"`
+	Changed       bool                   `protobuf:"varint,3,opt,name=changed,proto3" json:"changed,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AddVersionResponse) Reset() {
+	*x = AddVersionResponse{}
+	mi := &file_file_proto_msgTypes[30]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AddVersionResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AddVersionResponse) ProtoMessage() {}
+
+func (x *AddVersionResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_file_proto_msgTypes[30]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AddVersionResponse.ProtoReflect.Descriptor instead.
+func (*AddVersionResponse) Descriptor() ([]byte, []int) {
+	return file_file_proto_rawDescGZIP(), []int{30}
+}
+
+func (x *AddVersionResponse) GetVersion() int64 {
+	if x != nil {
+		return x.Version
+	}
+	return 0
+}
+
+func (x *AddVersionResponse) GetSuccess() bool {
+	if x != nil {
+		return x.Success
+	}
+	return false
+}
+
+func (x *AddVersionResponse) GetChanged() bool {
+	if x != nil {
+		return x.Changed
+	}
+	return false
+}
+
+type VersionItem struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Version       int64                  `protobuf:"varint,1,opt,name=version,proto3" json:"version,omitempty"`
+	Size          int64                  `protobuf:"varint,2,opt,name=size,proto3" json:"size,omitempty"`
+	ContentType   string                 `protobuf:"bytes,3,opt,name=content_type,json=contentType,proto3" json:"content_type,omitempty"`
+	ContentHash   string                 `protobuf:"bytes,4,opt,name=content_hash,json=contentHash,proto3" json:"content_hash,omitempty"`
+	CreatedAt     int64                  `protobuf:"varint,5,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	Current       bool                   `protobuf:"varint,6,opt,name=current,proto3" json:"current,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *VersionItem) Reset() {
+	*x = VersionItem{}
+	mi := &file_file_proto_msgTypes[31]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *VersionItem) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*VersionItem) ProtoMessage() {}
+
+func (x *VersionItem) ProtoReflect() protoreflect.Message {
+	mi := &file_file_proto_msgTypes[31]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use VersionItem.ProtoReflect.Descriptor instead.
+func (*VersionItem) Descriptor() ([]byte, []int) {
+	return file_file_proto_rawDescGZIP(), []int{31}
+}
+
+func (x *VersionItem) GetVersion() int64 {
+	if x != nil {
+		return x.Version
+	}
+	return 0
+}
+
+func (x *VersionItem) GetSize() int64 {
+	if x != nil {
+		return x.Size
+	}
+	return 0
+}
+
+func (x *VersionItem) GetContentType() string {
+	if x != nil {
+		return x.ContentType
+	}
+	return ""
+}
+
+func (x *VersionItem) GetContentHash() string {
+	if x != nil {
+		return x.ContentHash
+	}
+	return ""
+}
+
+func (x *VersionItem) GetCreatedAt() int64 {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return 0
+}
+
+func (x *VersionItem) GetCurrent() bool {
+	if x != nil {
+		return x.Current
+	}
+	return false
+}
+
+type ListVersionsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	FileId        int64                  `protobuf:"varint,1,opt,name=file_id,json=fileId,proto3" json:"file_id,omitempty"`
+	UserId        int64                  `protobuf:"varint,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListVersionsRequest) Reset() {
+	*x = ListVersionsRequest{}
+	mi := &file_file_proto_msgTypes[32]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListVersionsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListVersionsRequest) ProtoMessage() {}
+
+func (x *ListVersionsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_file_proto_msgTypes[32]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListVersionsRequest.ProtoReflect.Descriptor instead.
+func (*ListVersionsRequest) Descriptor() ([]byte, []int) {
+	return file_file_proto_rawDescGZIP(), []int{32}
+}
+
+func (x *ListVersionsRequest) GetFileId() int64 {
+	if x != nil {
+		return x.FileId
+	}
+	return 0
+}
+
+func (x *ListVersionsRequest) GetUserId() int64 {
+	if x != nil {
+		return x.UserId
+	}
+	return 0
+}
+
+type ListVersionsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Items         []*VersionItem         `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListVersionsResponse) Reset() {
+	*x = ListVersionsResponse{}
+	mi := &file_file_proto_msgTypes[33]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListVersionsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListVersionsResponse) ProtoMessage() {}
+
+func (x *ListVersionsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_file_proto_msgTypes[33]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListVersionsResponse.ProtoReflect.Descriptor instead.
+func (*ListVersionsResponse) Descriptor() ([]byte, []int) {
+	return file_file_proto_rawDescGZIP(), []int{33}
+}
+
+func (x *ListVersionsResponse) GetItems() []*VersionItem {
+	if x != nil {
+		return x.Items
+	}
+	return nil
+}
+
+type RestoreVersionRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	FileId        int64                  `protobuf:"varint,1,opt,name=file_id,json=fileId,proto3" json:"file_id,omitempty"`
+	UserId        int64                  `protobuf:"varint,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	Version       int64                  `protobuf:"varint,3,opt,name=version,proto3" json:"version,omitempty"`
+	RequestId     string                 `protobuf:"bytes,4,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RestoreVersionRequest) Reset() {
+	*x = RestoreVersionRequest{}
+	mi := &file_file_proto_msgTypes[34]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RestoreVersionRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RestoreVersionRequest) ProtoMessage() {}
+
+func (x *RestoreVersionRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_file_proto_msgTypes[34]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RestoreVersionRequest.ProtoReflect.Descriptor instead.
+func (*RestoreVersionRequest) Descriptor() ([]byte, []int) {
+	return file_file_proto_rawDescGZIP(), []int{34}
+}
+
+func (x *RestoreVersionRequest) GetFileId() int64 {
+	if x != nil {
+		return x.FileId
+	}
+	return 0
+}
+
+func (x *RestoreVersionRequest) GetUserId() int64 {
+	if x != nil {
+		return x.UserId
+	}
+	return 0
+}
+
+func (x *RestoreVersionRequest) GetVersion() int64 {
+	if x != nil {
+		return x.Version
+	}
+	return 0
+}
+
+func (x *RestoreVersionRequest) GetRequestId() string {
+	if x != nil {
+		return x.RequestId
+	}
+	return ""
+}
+
+type RestoreVersionResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	Changed       bool                   `protobuf:"varint,2,opt,name=changed,proto3" json:"changed,omitempty"`
+	Version       int64                  `protobuf:"varint,3,opt,name=version,proto3" json:"version,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RestoreVersionResponse) Reset() {
+	*x = RestoreVersionResponse{}
+	mi := &file_file_proto_msgTypes[35]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RestoreVersionResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RestoreVersionResponse) ProtoMessage() {}
+
+func (x *RestoreVersionResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_file_proto_msgTypes[35]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RestoreVersionResponse.ProtoReflect.Descriptor instead.
+func (*RestoreVersionResponse) Descriptor() ([]byte, []int) {
+	return file_file_proto_rawDescGZIP(), []int{35}
+}
+
+func (x *RestoreVersionResponse) GetSuccess() bool {
+	if x != nil {
+		return x.Success
+	}
+	return false
+}
+
+func (x *RestoreVersionResponse) GetChanged() bool {
+	if x != nil {
+		return x.Changed
+	}
+	return false
+}
+
+func (x *RestoreVersionResponse) GetVersion() int64 {
+	if x != nil {
+		return x.Version
+	}
+	return 0
+}
+
 var File_file_proto protoreflect.FileDescriptor
 
 const file_file_proto_rawDesc = "" +
 	"\n" +
 	"\n" +
-	"file.proto\x12\x04file\"B\n" +
-	"\x0eGetFileRequest\x12\x17\n" +
-	"\afile_id\x18\x01 \x01(\x03R\x06fileId\x12\x17\n" +
-	"\auser_id\x18\x02 \x01(\x03R\x06userId\"\x87\x02\n" +
-	"\x0fGetFileResponse\x12\x17\n" +
-	"\afile_id\x18\x01 \x01(\x03R\x06fileId\x12\x19\n" +
-	"\bowner_id\x18\x02 \x01(\x03R\aownerId\x12\x1b\n" +
-	"\tparent_id\x18\x03 \x01(\x03R\bparentId\x12\x12\n" +
-	"\x04name\x18\x04 \x01(\tR\x04name\x12\x12\n" +
-	"\x04size\x18\x05 \x01(\x03R\x04size\x12!\n" +
-	"\fcontent_type\x18\x06 \x01(\tR\vcontentType\x12!\n" +
-	"\fcontent_hash\x18\a \x01(\tR\vcontentHash\x12\x1d\n" +
+	"file.proto\x12\x04file\">\n" +
+	"\tObjectRef\x12\x1d\n" +
 	"\n" +
-	"object_key\x18\b \x01(\tR\tobjectKey\x12\x16\n" +
-	"\x06status\x18\t \x01(\tR\x06status\"\xf7\x01\n" +
+	"object_key\x18\x01 \x01(\tR\tobjectKey\x12\x12\n" +
+	"\x04size\x18\x02 \x01(\x03R\x04size\"\x8f\x02\n" +
 	"\x11CreateFileRequest\x12\x19\n" +
 	"\bowner_id\x18\x01 \x01(\x03R\aownerId\x12\x1b\n" +
 	"\tparent_id\x18\x02 \x01(\x03R\bparentId\x12\x12\n" +
@@ -579,32 +2475,214 @@ const file_file_proto_rawDesc = "" +
 	"\n" +
 	"object_key\x18\a \x01(\tR\tobjectKey\x12\x1d\n" +
 	"\n" +
-	"request_id\x18\b \x01(\tR\trequestId\"G\n" +
+	"request_id\x18\b \x01(\tR\trequestId\x12\x16\n" +
+	"\x06status\x18\t \x01(\tR\x06status\"a\n" +
 	"\x12CreateFileResponse\x12\x17\n" +
 	"\afile_id\x18\x01 \x01(\x03R\x06fileId\x12\x18\n" +
-	"\asuccess\x18\x02 \x01(\bR\asuccess\"\x84\x01\n" +
+	"\asuccess\x18\x02 \x01(\bR\asuccess\x12\x18\n" +
+	"\aexisted\x18\x03 \x01(\bR\aexisted\"B\n" +
+	"\x0eGetFileRequest\x12\x17\n" +
+	"\afile_id\x18\x01 \x01(\x03R\x06fileId\x12\x17\n" +
+	"\auser_id\x18\x02 \x01(\x03R\x06userId\"\xa1\x02\n" +
+	"\x0fGetFileResponse\x12\x17\n" +
+	"\afile_id\x18\x01 \x01(\x03R\x06fileId\x12\x19\n" +
+	"\bowner_id\x18\x02 \x01(\x03R\aownerId\x12\x1b\n" +
+	"\tparent_id\x18\x03 \x01(\x03R\bparentId\x12\x12\n" +
+	"\x04name\x18\x04 \x01(\tR\x04name\x12\x12\n" +
+	"\x04size\x18\x05 \x01(\x03R\x04size\x12!\n" +
+	"\fcontent_type\x18\x06 \x01(\tR\vcontentType\x12!\n" +
+	"\fcontent_hash\x18\a \x01(\tR\vcontentHash\x12\x1d\n" +
+	"\n" +
+	"object_key\x18\b \x01(\tR\tobjectKey\x12\x16\n" +
+	"\x06status\x18\t \x01(\tR\x06status\x12\x18\n" +
+	"\aversion\x18\n" +
+	" \x01(\x03R\aversion\"\xda\x01\n" +
 	"\x17UpdateFileStatusRequest\x12\x17\n" +
 	"\afile_id\x18\x01 \x01(\x03R\x06fileId\x12\x19\n" +
 	"\bowner_id\x18\x02 \x01(\x03R\aownerId\x12\x16\n" +
 	"\x06status\x18\x03 \x01(\tR\x06status\x12\x1d\n" +
 	"\n" +
-	"request_id\x18\x04 \x01(\tR\trequestId\"4\n" +
+	"request_id\x18\x04 \x01(\tR\trequestId\x12\x1d\n" +
+	"\n" +
+	"object_key\x18\x05 \x01(\tR\tobjectKey\x12\x12\n" +
+	"\x04size\x18\x06 \x01(\x03R\x04size\x12!\n" +
+	"\fcontent_hash\x18\a \x01(\tR\vcontentHash\"w\n" +
 	"\x18UpdateFileStatusResponse\x12\x18\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
+	"\achanged\x18\x02 \x01(\bR\achanged\x12'\n" +
+	"\x0fprevious_status\x18\x03 \x01(\tR\x0epreviousStatus\"\x98\x02\n" +
+	"\bFileItem\x12\x17\n" +
+	"\afile_id\x18\x01 \x01(\x03R\x06fileId\x12\x1b\n" +
+	"\tparent_id\x18\x02 \x01(\x03R\bparentId\x12\x12\n" +
+	"\x04name\x18\x03 \x01(\tR\x04name\x12\x12\n" +
+	"\x04size\x18\x04 \x01(\x03R\x04size\x12!\n" +
+	"\fcontent_type\x18\x05 \x01(\tR\vcontentType\x12\x1b\n" +
+	"\tis_folder\x18\x06 \x01(\bR\bisFolder\x12\x16\n" +
+	"\x06status\x18\a \x01(\tR\x06status\x12\x1d\n" +
+	"\n" +
+	"created_at\x18\b \x01(\x03R\tcreatedAt\x12\x1d\n" +
+	"\n" +
+	"updated_at\x18\t \x01(\x03R\tupdatedAt\x12\x18\n" +
+	"\aversion\x18\n" +
+	" \x01(\x03R\aversion\"{\n" +
+	"\x10ListFilesRequest\x12\x19\n" +
+	"\bowner_id\x18\x01 \x01(\x03R\aownerId\x12\x1b\n" +
+	"\tparent_id\x18\x02 \x01(\x03R\bparentId\x12\x12\n" +
+	"\x04page\x18\x03 \x01(\x03R\x04page\x12\x1b\n" +
+	"\tpage_size\x18\x04 \x01(\x03R\bpageSize\"O\n" +
+	"\x11ListFilesResponse\x12$\n" +
+	"\x05items\x18\x01 \x03(\v2\x0e.file.FileItemR\x05items\x12\x14\n" +
+	"\x05total\x18\x02 \x01(\x03R\x05total\"a\n" +
+	"\x13CreateFolderRequest\x12\x19\n" +
+	"\bowner_id\x18\x01 \x01(\x03R\aownerId\x12\x1b\n" +
+	"\tparent_id\x18\x02 \x01(\x03R\bparentId\x12\x12\n" +
+	"\x04name\x18\x03 \x01(\tR\x04name\"3\n" +
+	"\x14CreateFolderResponse\x12\x1b\n" +
+	"\tfolder_id\x18\x01 \x01(\x03R\bfolderId\"[\n" +
+	"\x11RenameFileRequest\x12\x17\n" +
+	"\afile_id\x18\x01 \x01(\x03R\x06fileId\x12\x19\n" +
+	"\bowner_id\x18\x02 \x01(\x03R\aownerId\x12\x12\n" +
+	"\x04name\x18\x03 \x01(\tR\x04name\".\n" +
+	"\x12RenameFileResponse\x12\x18\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess\"\x83\x01\n" +
+	"\x0fMoveFileRequest\x12\x17\n" +
+	"\afile_id\x18\x01 \x01(\x03R\x06fileId\x12\x19\n" +
+	"\bowner_id\x18\x02 \x01(\x03R\aownerId\x12(\n" +
+	"\x10target_parent_id\x18\x03 \x01(\x03R\x0etargetParentId\x12\x12\n" +
+	"\x04name\x18\x04 \x01(\tR\x04name\",\n" +
+	"\x10MoveFileResponse\x12\x18\n" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\"f\n" +
 	"\x11DeleteFileRequest\x12\x17\n" +
 	"\afile_id\x18\x01 \x01(\x03R\x06fileId\x12\x19\n" +
 	"\bowner_id\x18\x02 \x01(\x03R\aownerId\x12\x1d\n" +
 	"\n" +
-	"request_id\x18\x03 \x01(\tR\trequestId\".\n" +
+	"request_id\x18\x03 \x01(\tR\trequestId\"\x9a\x01\n" +
 	"\x12DeleteFileResponse\x12\x18\n" +
-	"\asuccess\x18\x01 \x01(\bR\asuccess2\x93\x02\n" +
-	"\x04File\x126\n" +
-	"\aGetFile\x12\x14.file.GetFileRequest\x1a\x15.file.GetFileResponse\x12?\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
+	"\achanged\x18\x02 \x01(\bR\achanged\x12%\n" +
+	"\x0ereleased_bytes\x18\x03 \x01(\x03R\rreleasedBytes\x12)\n" +
+	"\aobjects\x18\x04 \x03(\v2\x0f.file.ObjectRefR\aobjects\"l\n" +
+	"\x13DeleteFolderRequest\x12\x1b\n" +
+	"\tfolder_id\x18\x01 \x01(\x03R\bfolderId\x12\x19\n" +
+	"\bowner_id\x18\x02 \x01(\x03R\aownerId\x12\x1d\n" +
 	"\n" +
-	"CreateFile\x12\x17.file.CreateFileRequest\x1a\x18.file.CreateFileResponse\x12Q\n" +
-	"\x10UpdateFileStatus\x12\x1d.file.UpdateFileStatusRequest\x1a\x1e.file.UpdateFileStatusResponse\x12?\n" +
+	"request_id\x18\x03 \x01(\tR\trequestId\"\x9c\x01\n" +
+	"\x14DeleteFolderResponse\x12\x18\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
+	"\achanged\x18\x02 \x01(\bR\achanged\x12%\n" +
+	"\x0ereleased_bytes\x18\x03 \x01(\x03R\rreleasedBytes\x12)\n" +
+	"\aobjects\x18\x04 \x03(\v2\x0f.file.ObjectRefR\aobjects\"\xad\x01\n" +
+	"\x12CreateShareRequest\x12\x19\n" +
+	"\bowner_id\x18\x01 \x01(\x03R\aownerId\x12\x17\n" +
+	"\afile_id\x18\x02 \x01(\x03R\x06fileId\x12\x1a\n" +
+	"\bpassword\x18\x03 \x01(\tR\bpassword\x12\x1d\n" +
 	"\n" +
-	"DeleteFile\x12\x17.file.DeleteFileRequest\x1a\x18.file.DeleteFileResponseB\bZ\x06./fileb\x06proto3"
+	"expires_at\x18\x04 \x01(\x03R\texpiresAt\x12(\n" +
+	"\x10max_access_count\x18\x05 \x01(\x03R\x0emaxAccessCount\"e\n" +
+	"\x13CreateShareResponse\x12\x19\n" +
+	"\bshare_id\x18\x01 \x01(\x03R\ashareId\x12\x14\n" +
+	"\x05token\x18\x02 \x01(\tR\x05token\x12\x1d\n" +
+	"\n" +
+	"expires_at\x18\x03 \x01(\x03R\texpiresAt\"\xa2\x02\n" +
+	"\tShareItem\x12\x19\n" +
+	"\bshare_id\x18\x01 \x01(\x03R\ashareId\x12\x17\n" +
+	"\afile_id\x18\x02 \x01(\x03R\x06fileId\x12\x1b\n" +
+	"\tfile_name\x18\x03 \x01(\tR\bfileName\x12\x16\n" +
+	"\x06active\x18\x04 \x01(\bR\x06active\x12!\n" +
+	"\fhas_password\x18\x05 \x01(\bR\vhasPassword\x12\x1d\n" +
+	"\n" +
+	"expires_at\x18\x06 \x01(\x03R\texpiresAt\x12(\n" +
+	"\x10max_access_count\x18\a \x01(\x03R\x0emaxAccessCount\x12!\n" +
+	"\faccess_count\x18\b \x01(\x03R\vaccessCount\x12\x1d\n" +
+	"\n" +
+	"created_at\x18\t \x01(\x03R\tcreatedAt\"_\n" +
+	"\x11ListSharesRequest\x12\x19\n" +
+	"\bowner_id\x18\x01 \x01(\x03R\aownerId\x12\x12\n" +
+	"\x04page\x18\x02 \x01(\x03R\x04page\x12\x1b\n" +
+	"\tpage_size\x18\x03 \x01(\x03R\bpageSize\"Q\n" +
+	"\x12ListSharesResponse\x12%\n" +
+	"\x05items\x18\x01 \x03(\v2\x0f.file.ShareItemR\x05items\x12\x14\n" +
+	"\x05total\x18\x02 \x01(\x03R\x05total\"J\n" +
+	"\x12RevokeShareRequest\x12\x19\n" +
+	"\bshare_id\x18\x01 \x01(\x03R\ashareId\x12\x19\n" +
+	"\bowner_id\x18\x02 \x01(\x03R\aownerId\"/\n" +
+	"\x13RevokeShareResponse\x12\x18\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess\"F\n" +
+	"\x12AccessShareRequest\x12\x14\n" +
+	"\x05token\x18\x01 \x01(\tR\x05token\x12\x1a\n" +
+	"\bpassword\x18\x02 \x01(\tR\bpassword\"\xa1\x02\n" +
+	"\x13AccessShareResponse\x12\x18\n" +
+	"\agranted\x18\x01 \x01(\bR\agranted\x12\x16\n" +
+	"\x06reason\x18\x02 \x01(\tR\x06reason\x12\x19\n" +
+	"\bshare_id\x18\x03 \x01(\x03R\ashareId\x12\x17\n" +
+	"\afile_id\x18\x04 \x01(\x03R\x06fileId\x12\x19\n" +
+	"\bowner_id\x18\x05 \x01(\x03R\aownerId\x12\x1b\n" +
+	"\tfile_name\x18\x06 \x01(\tR\bfileName\x12\x12\n" +
+	"\x04size\x18\a \x01(\x03R\x04size\x12!\n" +
+	"\fcontent_type\x18\b \x01(\tR\vcontentType\x12\x1d\n" +
+	"\n" +
+	"object_key\x18\t \x01(\tR\tobjectKey\x12\x16\n" +
+	"\x06status\x18\n" +
+	" \x01(\tR\x06status\"\xdf\x01\n" +
+	"\x11AddVersionRequest\x12\x17\n" +
+	"\afile_id\x18\x01 \x01(\x03R\x06fileId\x12\x19\n" +
+	"\bowner_id\x18\x02 \x01(\x03R\aownerId\x12\x12\n" +
+	"\x04size\x18\x03 \x01(\x03R\x04size\x12!\n" +
+	"\fcontent_type\x18\x04 \x01(\tR\vcontentType\x12!\n" +
+	"\fcontent_hash\x18\x05 \x01(\tR\vcontentHash\x12\x1d\n" +
+	"\n" +
+	"object_key\x18\x06 \x01(\tR\tobjectKey\x12\x1d\n" +
+	"\n" +
+	"request_id\x18\a \x01(\tR\trequestId\"b\n" +
+	"\x12AddVersionResponse\x12\x18\n" +
+	"\aversion\x18\x01 \x01(\x03R\aversion\x12\x18\n" +
+	"\asuccess\x18\x02 \x01(\bR\asuccess\x12\x18\n" +
+	"\achanged\x18\x03 \x01(\bR\achanged\"\xba\x01\n" +
+	"\vVersionItem\x12\x18\n" +
+	"\aversion\x18\x01 \x01(\x03R\aversion\x12\x12\n" +
+	"\x04size\x18\x02 \x01(\x03R\x04size\x12!\n" +
+	"\fcontent_type\x18\x03 \x01(\tR\vcontentType\x12!\n" +
+	"\fcontent_hash\x18\x04 \x01(\tR\vcontentHash\x12\x1d\n" +
+	"\n" +
+	"created_at\x18\x05 \x01(\x03R\tcreatedAt\x12\x18\n" +
+	"\acurrent\x18\x06 \x01(\bR\acurrent\"G\n" +
+	"\x13ListVersionsRequest\x12\x17\n" +
+	"\afile_id\x18\x01 \x01(\x03R\x06fileId\x12\x17\n" +
+	"\auser_id\x18\x02 \x01(\x03R\x06userId\"?\n" +
+	"\x14ListVersionsResponse\x12'\n" +
+	"\x05items\x18\x01 \x03(\v2\x11.file.VersionItemR\x05items\"\x82\x01\n" +
+	"\x15RestoreVersionRequest\x12\x17\n" +
+	"\afile_id\x18\x01 \x01(\x03R\x06fileId\x12\x17\n" +
+	"\auser_id\x18\x02 \x01(\x03R\x06userId\x12\x18\n" +
+	"\aversion\x18\x03 \x01(\x03R\aversion\x12\x1d\n" +
+	"\n" +
+	"request_id\x18\x04 \x01(\tR\trequestId\"f\n" +
+	"\x16RestoreVersionResponse\x12\x18\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
+	"\achanged\x18\x02 \x01(\bR\achanged\x12\x18\n" +
+	"\aversion\x18\x03 \x01(\x03R\aversion2\xbd\b\n" +
+	"\x04File\x12?\n" +
+	"\n" +
+	"CreateFile\x12\x17.file.CreateFileRequest\x1a\x18.file.CreateFileResponse\x126\n" +
+	"\aGetFile\x12\x14.file.GetFileRequest\x1a\x15.file.GetFileResponse\x12Q\n" +
+	"\x10UpdateFileStatus\x12\x1d.file.UpdateFileStatusRequest\x1a\x1e.file.UpdateFileStatusResponse\x12<\n" +
+	"\tListFiles\x12\x16.file.ListFilesRequest\x1a\x17.file.ListFilesResponse\x12E\n" +
+	"\fCreateFolder\x12\x19.file.CreateFolderRequest\x1a\x1a.file.CreateFolderResponse\x12?\n" +
+	"\n" +
+	"RenameFile\x12\x17.file.RenameFileRequest\x1a\x18.file.RenameFileResponse\x129\n" +
+	"\bMoveFile\x12\x15.file.MoveFileRequest\x1a\x16.file.MoveFileResponse\x12?\n" +
+	"\n" +
+	"DeleteFile\x12\x17.file.DeleteFileRequest\x1a\x18.file.DeleteFileResponse\x12E\n" +
+	"\fDeleteFolder\x12\x19.file.DeleteFolderRequest\x1a\x1a.file.DeleteFolderResponse\x12B\n" +
+	"\vCreateShare\x12\x18.file.CreateShareRequest\x1a\x19.file.CreateShareResponse\x12?\n" +
+	"\n" +
+	"ListShares\x12\x17.file.ListSharesRequest\x1a\x18.file.ListSharesResponse\x12B\n" +
+	"\vRevokeShare\x12\x18.file.RevokeShareRequest\x1a\x19.file.RevokeShareResponse\x12B\n" +
+	"\vAccessShare\x12\x18.file.AccessShareRequest\x1a\x19.file.AccessShareResponse\x12?\n" +
+	"\n" +
+	"AddVersion\x12\x17.file.AddVersionRequest\x1a\x18.file.AddVersionResponse\x12E\n" +
+	"\fListVersions\x12\x19.file.ListVersionsRequest\x1a\x1a.file.ListVersionsResponse\x12K\n" +
+	"\x0eRestoreVersion\x12\x1b.file.RestoreVersionRequest\x1a\x1c.file.RestoreVersionResponseB\bZ\x06./fileb\x06proto3"
 
 var (
 	file_file_proto_rawDescOnce sync.Once
@@ -618,31 +2696,88 @@ func file_file_proto_rawDescGZIP() []byte {
 	return file_file_proto_rawDescData
 }
 
-var file_file_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
+var file_file_proto_msgTypes = make([]protoimpl.MessageInfo, 36)
 var file_file_proto_goTypes = []any{
-	(*GetFileRequest)(nil),           // 0: file.GetFileRequest
-	(*GetFileResponse)(nil),          // 1: file.GetFileResponse
-	(*CreateFileRequest)(nil),        // 2: file.CreateFileRequest
-	(*CreateFileResponse)(nil),       // 3: file.CreateFileResponse
-	(*UpdateFileStatusRequest)(nil),  // 4: file.UpdateFileStatusRequest
-	(*UpdateFileStatusResponse)(nil), // 5: file.UpdateFileStatusResponse
-	(*DeleteFileRequest)(nil),        // 6: file.DeleteFileRequest
-	(*DeleteFileResponse)(nil),       // 7: file.DeleteFileResponse
+	(*ObjectRef)(nil),                // 0: file.ObjectRef
+	(*CreateFileRequest)(nil),        // 1: file.CreateFileRequest
+	(*CreateFileResponse)(nil),       // 2: file.CreateFileResponse
+	(*GetFileRequest)(nil),           // 3: file.GetFileRequest
+	(*GetFileResponse)(nil),          // 4: file.GetFileResponse
+	(*UpdateFileStatusRequest)(nil),  // 5: file.UpdateFileStatusRequest
+	(*UpdateFileStatusResponse)(nil), // 6: file.UpdateFileStatusResponse
+	(*FileItem)(nil),                 // 7: file.FileItem
+	(*ListFilesRequest)(nil),         // 8: file.ListFilesRequest
+	(*ListFilesResponse)(nil),        // 9: file.ListFilesResponse
+	(*CreateFolderRequest)(nil),      // 10: file.CreateFolderRequest
+	(*CreateFolderResponse)(nil),     // 11: file.CreateFolderResponse
+	(*RenameFileRequest)(nil),        // 12: file.RenameFileRequest
+	(*RenameFileResponse)(nil),       // 13: file.RenameFileResponse
+	(*MoveFileRequest)(nil),          // 14: file.MoveFileRequest
+	(*MoveFileResponse)(nil),         // 15: file.MoveFileResponse
+	(*DeleteFileRequest)(nil),        // 16: file.DeleteFileRequest
+	(*DeleteFileResponse)(nil),       // 17: file.DeleteFileResponse
+	(*DeleteFolderRequest)(nil),      // 18: file.DeleteFolderRequest
+	(*DeleteFolderResponse)(nil),     // 19: file.DeleteFolderResponse
+	(*CreateShareRequest)(nil),       // 20: file.CreateShareRequest
+	(*CreateShareResponse)(nil),      // 21: file.CreateShareResponse
+	(*ShareItem)(nil),                // 22: file.ShareItem
+	(*ListSharesRequest)(nil),        // 23: file.ListSharesRequest
+	(*ListSharesResponse)(nil),       // 24: file.ListSharesResponse
+	(*RevokeShareRequest)(nil),       // 25: file.RevokeShareRequest
+	(*RevokeShareResponse)(nil),      // 26: file.RevokeShareResponse
+	(*AccessShareRequest)(nil),       // 27: file.AccessShareRequest
+	(*AccessShareResponse)(nil),      // 28: file.AccessShareResponse
+	(*AddVersionRequest)(nil),        // 29: file.AddVersionRequest
+	(*AddVersionResponse)(nil),       // 30: file.AddVersionResponse
+	(*VersionItem)(nil),              // 31: file.VersionItem
+	(*ListVersionsRequest)(nil),      // 32: file.ListVersionsRequest
+	(*ListVersionsResponse)(nil),     // 33: file.ListVersionsResponse
+	(*RestoreVersionRequest)(nil),    // 34: file.RestoreVersionRequest
+	(*RestoreVersionResponse)(nil),   // 35: file.RestoreVersionResponse
 }
 var file_file_proto_depIdxs = []int32{
-	0, // 0: file.File.GetFile:input_type -> file.GetFileRequest
-	2, // 1: file.File.CreateFile:input_type -> file.CreateFileRequest
-	4, // 2: file.File.UpdateFileStatus:input_type -> file.UpdateFileStatusRequest
-	6, // 3: file.File.DeleteFile:input_type -> file.DeleteFileRequest
-	1, // 4: file.File.GetFile:output_type -> file.GetFileResponse
-	3, // 5: file.File.CreateFile:output_type -> file.CreateFileResponse
-	5, // 6: file.File.UpdateFileStatus:output_type -> file.UpdateFileStatusResponse
-	7, // 7: file.File.DeleteFile:output_type -> file.DeleteFileResponse
-	4, // [4:8] is the sub-list for method output_type
-	0, // [0:4] is the sub-list for method input_type
-	0, // [0:0] is the sub-list for extension type_name
-	0, // [0:0] is the sub-list for extension extendee
-	0, // [0:0] is the sub-list for field type_name
+	7,  // 0: file.ListFilesResponse.items:type_name -> file.FileItem
+	0,  // 1: file.DeleteFileResponse.objects:type_name -> file.ObjectRef
+	0,  // 2: file.DeleteFolderResponse.objects:type_name -> file.ObjectRef
+	22, // 3: file.ListSharesResponse.items:type_name -> file.ShareItem
+	31, // 4: file.ListVersionsResponse.items:type_name -> file.VersionItem
+	1,  // 5: file.File.CreateFile:input_type -> file.CreateFileRequest
+	3,  // 6: file.File.GetFile:input_type -> file.GetFileRequest
+	5,  // 7: file.File.UpdateFileStatus:input_type -> file.UpdateFileStatusRequest
+	8,  // 8: file.File.ListFiles:input_type -> file.ListFilesRequest
+	10, // 9: file.File.CreateFolder:input_type -> file.CreateFolderRequest
+	12, // 10: file.File.RenameFile:input_type -> file.RenameFileRequest
+	14, // 11: file.File.MoveFile:input_type -> file.MoveFileRequest
+	16, // 12: file.File.DeleteFile:input_type -> file.DeleteFileRequest
+	18, // 13: file.File.DeleteFolder:input_type -> file.DeleteFolderRequest
+	20, // 14: file.File.CreateShare:input_type -> file.CreateShareRequest
+	23, // 15: file.File.ListShares:input_type -> file.ListSharesRequest
+	25, // 16: file.File.RevokeShare:input_type -> file.RevokeShareRequest
+	27, // 17: file.File.AccessShare:input_type -> file.AccessShareRequest
+	29, // 18: file.File.AddVersion:input_type -> file.AddVersionRequest
+	32, // 19: file.File.ListVersions:input_type -> file.ListVersionsRequest
+	34, // 20: file.File.RestoreVersion:input_type -> file.RestoreVersionRequest
+	2,  // 21: file.File.CreateFile:output_type -> file.CreateFileResponse
+	4,  // 22: file.File.GetFile:output_type -> file.GetFileResponse
+	6,  // 23: file.File.UpdateFileStatus:output_type -> file.UpdateFileStatusResponse
+	9,  // 24: file.File.ListFiles:output_type -> file.ListFilesResponse
+	11, // 25: file.File.CreateFolder:output_type -> file.CreateFolderResponse
+	13, // 26: file.File.RenameFile:output_type -> file.RenameFileResponse
+	15, // 27: file.File.MoveFile:output_type -> file.MoveFileResponse
+	17, // 28: file.File.DeleteFile:output_type -> file.DeleteFileResponse
+	19, // 29: file.File.DeleteFolder:output_type -> file.DeleteFolderResponse
+	21, // 30: file.File.CreateShare:output_type -> file.CreateShareResponse
+	24, // 31: file.File.ListShares:output_type -> file.ListSharesResponse
+	26, // 32: file.File.RevokeShare:output_type -> file.RevokeShareResponse
+	28, // 33: file.File.AccessShare:output_type -> file.AccessShareResponse
+	30, // 34: file.File.AddVersion:output_type -> file.AddVersionResponse
+	33, // 35: file.File.ListVersions:output_type -> file.ListVersionsResponse
+	35, // 36: file.File.RestoreVersion:output_type -> file.RestoreVersionResponse
+	21, // [21:37] is the sub-list for method output_type
+	5,  // [5:21] is the sub-list for method input_type
+	5,  // [5:5] is the sub-list for extension type_name
+	5,  // [5:5] is the sub-list for extension extendee
+	0,  // [0:5] is the sub-list for field type_name
 }
 
 func init() { file_file_proto_init() }
@@ -656,7 +2791,7 @@ func file_file_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_file_proto_rawDesc), len(file_file_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   8,
+			NumMessages:   36,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

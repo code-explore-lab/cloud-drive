@@ -3,50 +3,36 @@
 
 package types
 
+type AbortUploadReq struct {
+	UploadID string `path:"uploadId"`
+}
+
 type AbortUploadResp struct {
 	Success bool `json:"success"`
 }
 
-type CompleteStorageUploadReq struct {
-	UploadID string `json:"uploadId"`
-}
-
-type CompleteStorageUploadResp struct {
-	UploadID    string `json:"uploadId"`
-	ObjectKey   string `json:"objectKey"`
+type UploadPartState struct {
+	PartNumber  int64  `json:"partNumber"`
 	Size        int64  `json:"size"`
-	ContentHash string `json:"contentHash"`
-	Status      string `json:"status"`
-}
-
-type GetStorageObjectResp struct {
-	ObjectKey   string `json:"objectKey"`
-	Size        int64  `json:"size"`
-	ContentType string `json:"contentType"`
-}
-
-type InitStorageUploadReq struct {
-	UploadID    string `json:"uploadId"`
-	UserID      int64  `json:"userId"`
-	FileName    string `json:"fileName"`
-	Size        int64  `json:"size"`
-	ContentType string `json:"contentType"`
+	ETag        string `json:"etag"`
 	ContentHash string `json:"contentHash"`
 }
 
-type InitStorageUploadResp struct {
-	UploadID    string `json:"uploadId"`
-	ChunkSize   int64  `json:"chunkSize"`
-	TotalChunks int64  `json:"totalChunks"`
+type UploadProgressReq struct {
+	UploadID string `path:"uploadId"`
 }
 
-type UploadPartReq struct {
-	UploadID   string `path:"uploadId"`
-	PartNumber int64  `path:"partNumber"`
-}
-
-type UploadPartResp struct {
-	UploadID   string `json:"uploadId"`
-	PartNumber int64  `json:"partNumber"`
-	ETag       string `json:"etag"`
+type UploadProgressResp struct {
+	UploadID       string            `json:"uploadId"`
+	Status         string            `json:"status"`
+	FileName       string            `json:"fileName"`
+	ContentType    string            `json:"contentType"`
+	TotalSize      int64             `json:"totalSize"`
+	ChunkSize      int64             `json:"chunkSize"`
+	TotalChunks    int64             `json:"totalChunks"`
+	UploadedChunks int64             `json:"uploadedChunks"`
+	UploadedBytes  int64             `json:"uploadedBytes"`
+	MissingParts   []int64           `json:"missingParts"`
+	Parts          []UploadPartState `json:"parts"`
+	ExpiresAt      int64             `json:"expiresAt"`
 }

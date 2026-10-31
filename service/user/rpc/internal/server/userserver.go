@@ -34,6 +34,11 @@ func (s *UserServer) Login(ctx context.Context, in *user.LoginRequest) (*user.Lo
 	return l.Login(in)
 }
 
+func (s *UserServer) Logout(ctx context.Context, in *user.LogoutRequest) (*user.LogoutResponse, error) {
+	l := logic.NewLogoutLogic(ctx, s.svcCtx)
+	return l.Logout(in)
+}
+
 func (s *UserServer) RefreshToken(ctx context.Context, in *user.RefreshTokenRequest) (*user.RefreshTokenResponse, error) {
 	l := logic.NewRefreshTokenLogic(ctx, s.svcCtx)
 	return l.RefreshToken(in)
@@ -55,12 +60,26 @@ func (s *UserServer) ValidateToken(ctx context.Context, in *user.ValidateTokenRe
 	return l.ValidateToken(in)
 }
 
+// ReserveQuota 预占额度：reserved += bytes。
 func (s *UserServer) ReserveQuota(ctx context.Context, in *user.ReserveQuotaRequest) (*user.ReserveQuotaResponse, error) {
 	l := logic.NewReserveQuotaLogic(ctx, s.svcCtx)
 	return l.ReserveQuota(in)
 }
 
+// CommitQuota 提交额度：used += bytes, reserved -= bytes。
+func (s *UserServer) CommitQuota(ctx context.Context, in *user.CommitQuotaRequest) (*user.CommitQuotaResponse, error) {
+	l := logic.NewCommitQuotaLogic(ctx, s.svcCtx)
+	return l.CommitQuota(in)
+}
+
+// ReleaseQuota 归还预占额度：reserved -= bytes（上传取消）。
 func (s *UserServer) ReleaseQuota(ctx context.Context, in *user.ReleaseQuotaRequest) (*user.ReleaseQuotaResponse, error) {
 	l := logic.NewReleaseQuotaLogic(ctx, s.svcCtx)
 	return l.ReleaseQuota(in)
+}
+
+// ReleaseUsedQuota 归还已用额度：used -= bytes（文件删除）。
+func (s *UserServer) ReleaseUsedQuota(ctx context.Context, in *user.ReleaseUsedQuotaRequest) (*user.ReleaseUsedQuotaResponse, error) {
+	l := logic.NewReleaseUsedQuotaLogic(ctx, s.svcCtx)
+	return l.ReleaseUsedQuota(in)
 }

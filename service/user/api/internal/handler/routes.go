@@ -13,30 +13,44 @@ import (
 )
 
 func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
+	// 存活探针。
 	server.AddRoutes(
 		[]rest.Route{
 			{
-				Method:  http.MethodPost,
-				Path:    "/v1/users/login",
-				Handler: LoginHandler(serverCtx),
-			},
-			{
-				Method:  http.MethodPost,
-				Path:    "/v1/users/refresh",
-				Handler: RefreshTokenHandler(serverCtx),
-			},
-			{
-				Method:  http.MethodPost,
-				Path:    "/v1/users/register",
-				Handler: RegisterHandler(serverCtx),
+				Method:  http.MethodGet,
+				Path:    "/healthz",
+				Handler: HealthHandler(serverCtx),
 			},
 		},
 	)
 
+	// 公开接口：注册、登录、刷新令牌。它们最容易被打，所以要限流。
+	rateLimit := middleware.NewRateLimitMiddleware(
+		serverCtx.Config.Limit.RPS, serverCtx.Config.Limit.Burst)
+	server.AddRoutes(
+		rest.WithMiddleware(rateLimit.Handle,
+			rest.Route{
+				Method:  http.MethodPost,
+				Path:    "/v1/users/login",
+				Handler: LoginHandler(serverCtx),
+			},
+			rest.Route{
+				Method:  http.MethodPost,
+				Path:    "/v1/users/register",
+				Handler: RegisterHandler(serverCtx),
+			},
+			rest.Route{
+				Method:  http.MethodPost,
+				Path:    "/v1/users/refresh",
+				Handler: RefreshTokenHandler(serverCtx),
+			},
+		),
+	)
+
+	// 需要登录的接口。
 	auth := middleware.NewAuthMiddleware(serverCtx)
 	server.AddRoutes(
-		rest.WithMiddleware(
-			auth.Handle,
+		rest.WithMiddleware(auth.Handle,
 			rest.Route{
 				Method:  http.MethodGet,
 				Path:    "/v1/users/me",
@@ -46,6 +60,11 @@ func RegisterHandlers(server *rest.Server, serverCtx *svc.ServiceContext) {
 				Method:  http.MethodGet,
 				Path:    "/v1/users/me/quota",
 				Handler: GetQuotaHandler(serverCtx),
+			},
+			rest.Route{
+				Method:  http.MethodPost,
+				Path:    "/v1/users/logout",
+				Handler: LogoutHandler(serverCtx),
 			},
 		),
 	)

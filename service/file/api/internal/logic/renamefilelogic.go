@@ -1,15 +1,16 @@
-// Code scaffolded by goctl. Safe to edit.
-// goctl 1.10.1
-
 package logic
 
 import (
 	"context"
 
+	"cloud-drive/common/ctxdata"
 	"cloud-drive/service/file/api/internal/svc"
 	"cloud-drive/service/file/api/internal/types"
+	"cloud-drive/service/file/rpc/fileclient"
 
 	"github.com/zeromicro/go-zero/core/logx"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type RenameFileLogic struct {
@@ -27,7 +28,15 @@ func NewRenameFileLogic(ctx context.Context, svcCtx *svc.ServiceContext) *Rename
 }
 
 func (l *RenameFileLogic) RenameFile(req *types.RenameFileReq) error {
-	// todo: add your logic here and delete this line
+	userId, ok := ctxdata.UserIdFromCtx(l.ctx)
+	if !ok {
+		return status.Error(codes.Unauthenticated, "unauthorized")
+	}
 
-	return nil
+	_, err := l.svcCtx.FileRpc.RenameFile(l.ctx, &fileclient.RenameFileRequest{
+		FileId:  req.FileID,
+		OwnerId: int64(userId),
+		Name:    req.Name,
+	})
+	return err
 }

@@ -1,10 +1,31 @@
 Name: storage-api
 Host: 0.0.0.0
 Port: 8002
-Mysql:
-  DataSource: root:123456@tcp(127.0.0.1:13306)/cloud-drive?charset=utf8mb4&parseTime=true&loc=Asia%2FShanghai
-
-CacheRedis:
-  - Host: 127.0.0.1:16379
-    Pass:
-    Type: node
+Timeout: 60000
+MaxBytes: 1048576
+Log:
+  ServiceName: storage-api
+  Mode: console
+  Encoding: json
+  Level: info
+Minio:
+  Endpoint: 127.0.0.1:19000
+  AccessKey: minioadmin
+  SecretKey: minioadmin
+  Bucket: cloud-drive
+  UseSSL: false
+Internal:
+  Token: dev-internal-token
+MaxChunkBytes: 16777216
+StorageRpc:
+  Timeout: 30000
+  Etcd:
+    Hosts:
+      - 127.0.0.1:12379
+    Key: storage.rpc
+UserRpc:
+  Timeout: 15000
+  Etcd:
+    Hosts:
+      - 127.0.0.1:12379
+    Key: user.rpc

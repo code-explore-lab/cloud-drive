@@ -51,8 +51,10 @@ type (
 		ExpiresAt      sql.NullTime   `db:"expires_at"`
 		MaxAccessCount sql.NullInt64  `db:"max_access_count"`
 		AccessCount    uint64         `db:"access_count"`
+		LastAccessAt   sql.NullTime   `db:"last_access_at"`
 		Status         int64          `db:"status"` // 1=active, 0=disabled
 		CreatedAt      time.Time      `db:"created_at"`
+		UpdatedAt      time.Time      `db:"updated_at"`
 	}
 )
 
@@ -119,8 +121,8 @@ func (m *defaultSharesModel) Insert(ctx context.Context, data *Shares) (sql.Resu
 	sharesIdKey := fmt.Sprintf("%s%v", cacheSharesIdPrefix, data.Id)
 	sharesTokenHashKey := fmt.Sprintf("%s%v", cacheSharesTokenHashPrefix, data.TokenHash)
 	ret, err := m.ExecCtx(ctx, func(ctx context.Context, conn sqlx.SqlConn) (result sql.Result, err error) {
-		query := fmt.Sprintf("insert into %s (%s) values (?, ?, ?, ?, ?, ?, ?, ?)", m.table, sharesRowsExpectAutoSet)
-		return conn.ExecCtx(ctx, query, data.FileId, data.OwnerId, data.TokenHash, data.PasswordHash, data.ExpiresAt, data.MaxAccessCount, data.AccessCount, data.Status)
+		query := fmt.Sprintf("insert into %s (%s) values (?, ?, ?, ?, ?, ?, ?, ?, ?)", m.table, sharesRowsExpectAutoSet)
+		return conn.ExecCtx(ctx, query, data.FileId, data.OwnerId, data.TokenHash, data.PasswordHash, data.ExpiresAt, data.MaxAccessCount, data.AccessCount, data.LastAccessAt, data.Status)
 	}, sharesIdKey, sharesTokenHashKey)
 	return ret, err
 }
@@ -135,7 +137,7 @@ func (m *defaultSharesModel) Update(ctx context.Context, newData *Shares) error 
 	sharesTokenHashKey := fmt.Sprintf("%s%v", cacheSharesTokenHashPrefix, data.TokenHash)
 	_, err = m.ExecCtx(ctx, func(ctx context.Context, conn sqlx.SqlConn) (result sql.Result, err error) {
 		query := fmt.Sprintf("update %s set %s where `id` = ?", m.table, sharesRowsWithPlaceHolder)
-		return conn.ExecCtx(ctx, query, newData.FileId, newData.OwnerId, newData.TokenHash, newData.PasswordHash, newData.ExpiresAt, newData.MaxAccessCount, newData.AccessCount, newData.Status, newData.Id)
+		return conn.ExecCtx(ctx, query, newData.FileId, newData.OwnerId, newData.TokenHash, newData.PasswordHash, newData.ExpiresAt, newData.MaxAccessCount, newData.AccessCount, newData.LastAccessAt, newData.Status, newData.Id)
 	}, sharesIdKey, sharesTokenHashKey)
 	return err
 }

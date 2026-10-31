@@ -1,0 +1,18 @@
+Name: user-api
+Host: 0.0.0.0
+Port: 8000
+Timeout: 10000
+MaxBytes: 1048576
+Log:
+  ServiceName: user-api
+  Mode: console
+  Encoding: json
+  Level: info
+Limit:
+  RPS: 5
+  Burst: 10
+UserRpc:
+  Etcd:
+    Hosts:
+      - etcd:2379
+    Key: user.rpc

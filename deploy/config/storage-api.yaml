@@ -1,0 +1,29 @@
+Name: storage-api
+Host: 0.0.0.0
+Port: 8002
+Timeout: 60000
+MaxBytes: 1048576
+Log:
+  ServiceName: storage-api
+  Mode: console
+  Encoding: json
+  Level: info
+Minio:
+  Endpoint: ${MINIO_ENDPOINT}
+  AccessKey: ${MINIO_ACCESS_KEY}
+  SecretKey: ${MINIO_SECRET_KEY}
+  Bucket: ${MINIO_BUCKET}
+  UseSSL: ${MINIO_USE_SSL}
+Internal:
+  Token: ${INTERNAL_TOKEN}
+MaxChunkBytes: 16777216
+StorageRpc:
+  Etcd:
+    Hosts:
+      - etcd:2379
+    Key: storage.rpc
+UserRpc:
+  Etcd:
+    Hosts:
+      - etcd:2379
+    Key: user.rpc

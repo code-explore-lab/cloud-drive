@@ -19,14 +19,17 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	User_Register_FullMethodName      = "/user.User/Register"
-	User_Login_FullMethodName         = "/user.User/Login"
-	User_RefreshToken_FullMethodName  = "/user.User/RefreshToken"
-	User_GetUser_FullMethodName       = "/user.User/GetUser"
-	User_GetQuota_FullMethodName      = "/user.User/GetQuota"
-	User_ValidateToken_FullMethodName = "/user.User/ValidateToken"
-	User_ReserveQuota_FullMethodName  = "/user.User/ReserveQuota"
-	User_ReleaseQuota_FullMethodName  = "/user.User/ReleaseQuota"
+	User_Register_FullMethodName         = "/user.User/Register"
+	User_Login_FullMethodName            = "/user.User/Login"
+	User_Logout_FullMethodName           = "/user.User/Logout"
+	User_RefreshToken_FullMethodName     = "/user.User/RefreshToken"
+	User_GetUser_FullMethodName          = "/user.User/GetUser"
+	User_GetQuota_FullMethodName         = "/user.User/GetQuota"
+	User_ValidateToken_FullMethodName    = "/user.User/ValidateToken"
+	User_ReserveQuota_FullMethodName     = "/user.User/ReserveQuota"
+	User_CommitQuota_FullMethodName      = "/user.User/CommitQuota"
+	User_ReleaseQuota_FullMethodName     = "/user.User/ReleaseQuota"
+	User_ReleaseUsedQuota_FullMethodName = "/user.User/ReleaseUsedQuota"
 )
 
 // UserClient is the client API for User service.
@@ -36,13 +39,20 @@ type UserClient interface {
 	// ---- 对外：由 user-api 调用 ----
 	Register(ctx context.Context, in *RegisterRequest, opts ...grpc.CallOption) (*RegisterResponse, error)
 	Login(ctx context.Context, in *LoginRequest, opts ...grpc.CallOption) (*LoginResponse, error)
+	Logout(ctx context.Context, in *LogoutRequest, opts ...grpc.CallOption) (*LogoutResponse, error)
 	RefreshToken(ctx context.Context, in *RefreshTokenRequest, opts ...grpc.CallOption) (*RefreshTokenResponse, error)
 	GetUser(ctx context.Context, in *GetUserRequest, opts ...grpc.CallOption) (*GetUserResponse, error)
 	GetQuota(ctx context.Context, in *GetQuotaRequest, opts ...grpc.CallOption) (*GetQuotaResponse, error)
 	// ---- 内部：由 file / storage 服务调用 ----
 	ValidateToken(ctx context.Context, in *ValidateTokenRequest, opts ...grpc.CallOption) (*ValidateTokenResponse, error)
+	// ReserveQuota 预占额度：reserved += bytes。
 	ReserveQuota(ctx context.Context, in *ReserveQuotaRequest, opts ...grpc.CallOption) (*ReserveQuotaResponse, error)
+	// CommitQuota 提交额度：used += bytes, reserved -= bytes。
+	CommitQuota(ctx context.Context, in *CommitQuotaRequest, opts ...grpc.CallOption) (*CommitQuotaResponse, error)
+	// ReleaseQuota 归还预占额度：reserved -= bytes（上传取消）。
 	ReleaseQuota(ctx context.Context, in *ReleaseQuotaRequest, opts ...grpc.CallOption) (*ReleaseQuotaResponse, error)
+	// ReleaseUsedQuota 归还已用额度：used -= bytes（文件删除）。
+	ReleaseUsedQuota(ctx context.Context, in *ReleaseUsedQuotaRequest, opts ...grpc.CallOption) (*ReleaseUsedQuotaResponse, error)
 }
 
 type userClient struct {
@@ -67,6 +77,16 @@ func (c *userClient) Login(ctx context.Context, in *LoginRequest, opts ...grpc.C
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(LoginResponse)
 	err := c.cc.Invoke(ctx, User_Login_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userClient) Logout(ctx context.Context, in *LogoutRequest, opts ...grpc.CallOption) (*LogoutResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(LogoutResponse)
+	err := c.cc.Invoke(ctx, User_Logout_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -123,10 +143,30 @@ func (c *userClient) ReserveQuota(ctx context.Context, in *ReserveQuotaRequest, 
 	return out, nil
 }
 
+func (c *userClient) CommitQuota(ctx context.Context, in *CommitQuotaRequest, opts ...grpc.CallOption) (*CommitQuotaResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CommitQuotaResponse)
+	err := c.cc.Invoke(ctx, User_CommitQuota_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *userClient) ReleaseQuota(ctx context.Context, in *ReleaseQuotaRequest, opts ...grpc.CallOption) (*ReleaseQuotaResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ReleaseQuotaResponse)
 	err := c.cc.Invoke(ctx, User_ReleaseQuota_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userClient) ReleaseUsedQuota(ctx context.Context, in *ReleaseUsedQuotaRequest, opts ...grpc.CallOption) (*ReleaseUsedQuotaResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ReleaseUsedQuotaResponse)
+	err := c.cc.Invoke(ctx, User_ReleaseUsedQuota_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -140,13 +180,20 @@ type UserServer interface {
 	// ---- 对外：由 user-api 调用 ----
 	Register(context.Context, *RegisterRequest) (*RegisterResponse, error)
 	Login(context.Context, *LoginRequest) (*LoginResponse, error)
+	Logout(context.Context, *LogoutRequest) (*LogoutResponse, error)
 	RefreshToken(context.Context, *RefreshTokenRequest) (*RefreshTokenResponse, error)
 	GetUser(context.Context, *GetUserRequest) (*GetUserResponse, error)
 	GetQuota(context.Context, *GetQuotaRequest) (*GetQuotaResponse, error)
 	// ---- 内部：由 file / storage 服务调用 ----
 	ValidateToken(context.Context, *ValidateTokenRequest) (*ValidateTokenResponse, error)
+	// ReserveQuota 预占额度：reserved += bytes。
 	ReserveQuota(context.Context, *ReserveQuotaRequest) (*ReserveQuotaResponse, error)
+	// CommitQuota 提交额度：used += bytes, reserved -= bytes。
+	CommitQuota(context.Context, *CommitQuotaRequest) (*CommitQuotaResponse, error)
+	// ReleaseQuota 归还预占额度：reserved -= bytes（上传取消）。
 	ReleaseQuota(context.Context, *ReleaseQuotaRequest) (*ReleaseQuotaResponse, error)
+	// ReleaseUsedQuota 归还已用额度：used -= bytes（文件删除）。
+	ReleaseUsedQuota(context.Context, *ReleaseUsedQuotaRequest) (*ReleaseUsedQuotaResponse, error)
 	mustEmbedUnimplementedUserServer()
 }
 
@@ -163,6 +210,9 @@ func (UnimplementedUserServer) Register(context.Context, *RegisterRequest) (*Reg
 func (UnimplementedUserServer) Login(context.Context, *LoginRequest) (*LoginResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Login not implemented")
 }
+func (UnimplementedUserServer) Logout(context.Context, *LogoutRequest) (*LogoutResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method Logout not implemented")
+}
 func (UnimplementedUserServer) RefreshToken(context.Context, *RefreshTokenRequest) (*RefreshTokenResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method RefreshToken not implemented")
 }
@@ -178,8 +228,14 @@ func (UnimplementedUserServer) ValidateToken(context.Context, *ValidateTokenRequ
 func (UnimplementedUserServer) ReserveQuota(context.Context, *ReserveQuotaRequest) (*ReserveQuotaResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ReserveQuota not implemented")
 }
+func (UnimplementedUserServer) CommitQuota(context.Context, *CommitQuotaRequest) (*CommitQuotaResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method CommitQuota not implemented")
+}
 func (UnimplementedUserServer) ReleaseQuota(context.Context, *ReleaseQuotaRequest) (*ReleaseQuotaResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ReleaseQuota not implemented")
+}
+func (UnimplementedUserServer) ReleaseUsedQuota(context.Context, *ReleaseUsedQuotaRequest) (*ReleaseUsedQuotaResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ReleaseUsedQuota not implemented")
 }
 func (UnimplementedUserServer) mustEmbedUnimplementedUserServer() {}
 func (UnimplementedUserServer) testEmbeddedByValue()              {}
@@ -234,6 +290,24 @@ func _User_Login_Handler(srv interface{}, ctx context.Context, dec func(interfac
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(UserServer).Login(ctx, req.(*LoginRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _User_Logout_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LogoutRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServer).Logout(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: User_Logout_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServer).Logout(ctx, req.(*LogoutRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -328,6 +402,24 @@ func _User_ReserveQuota_Handler(srv interface{}, ctx context.Context, dec func(i
 	return interceptor(ctx, in, info, handler)
 }
 
+func _User_CommitQuota_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CommitQuotaRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServer).CommitQuota(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: User_CommitQuota_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServer).CommitQuota(ctx, req.(*CommitQuotaRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _User_ReleaseQuota_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ReleaseQuotaRequest)
 	if err := dec(in); err != nil {
@@ -346,6 +438,24 @@ func _User_ReleaseQuota_Handler(srv interface{}, ctx context.Context, dec func(i
 	return interceptor(ctx, in, info, handler)
 }
 
+func _User_ReleaseUsedQuota_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ReleaseUsedQuotaRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServer).ReleaseUsedQuota(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: User_ReleaseUsedQuota_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServer).ReleaseUsedQuota(ctx, req.(*ReleaseUsedQuotaRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // User_ServiceDesc is the grpc.ServiceDesc for User service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -360,6 +470,10 @@ var User_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Login",
 			Handler:    _User_Login_Handler,
+		},
+		{
+			MethodName: "Logout",
+			Handler:    _User_Logout_Handler,
 		},
 		{
 			MethodName: "RefreshToken",
@@ -382,8 +496,16 @@ var User_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _User_ReserveQuota_Handler,
 		},
 		{
+			MethodName: "CommitQuota",
+			Handler:    _User_CommitQuota_Handler,
+		},
+		{
 			MethodName: "ReleaseQuota",
 			Handler:    _User_ReleaseQuota_Handler,
+		},
+		{
+			MethodName: "ReleaseUsedQuota",
+			Handler:    _User_ReleaseUsedQuota_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

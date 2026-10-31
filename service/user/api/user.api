@@ -29,6 +29,15 @@ type LoginResp {
 	ExpiresAt    int64  `json:"expiresAt"`
 }
 
+type LogoutReq {
+	RefreshToken string `json:"refreshToken,optional"`
+}
+
+type LogoutResp {
+	Success      bool  `json:"success"`
+	RevokedCount int64 `json:"revokedCount"`
+}
+
 type UserInfoReq {}
 
 type UserInfoResp {
@@ -63,13 +72,15 @@ service user-api {
 	@handler Login
 	post /v1/users/login (LoginReq) returns (LoginResp)
 
+	@handler RefreshToken
+	post /v1/users/refresh (RefreshTokenReq) returns (RefreshTokenResp)
+
 	@handler GetUserInfo
 	get /v1/users/me returns (UserInfoResp)
 
 	@handler GetQuota
 	get /v1/users/me/quota returns (QuotaResp)
 
-	@handler RefreshToken
-	post /v1/users/refresh (RefreshTokenReq) returns (RefreshTokenResp)
+	@handler Logout
+	post /v1/users/logout (LogoutReq) returns (LogoutResp)
 }
-

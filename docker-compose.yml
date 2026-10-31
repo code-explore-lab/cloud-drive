@@ -1,0 +1,303 @@
+name: cloud-drive
+
+# 说明：
+# - 基础设施（MySQL/Redis/etcd/MinIO）与 6 个 Go 服务都跑在容器里。
+# - 配置通过 deploy/config/*.yaml 挂载，密钥用环境变量注入（见 .env.example）。
+# - 每个服务内置 go-zero dev server，在 :6060 暴露 /metrics 与 /healthz，
+#   Prometheus 通过 compose 网络按容器名抓取，不需要把 6060 映射到宿主机。
+# - 监控栈默认不启动，需要时加 --profile observability。
+
+x-build-common: &build-common
+  context: .
+  dockerfile: Dockerfile
+
+x-rpc-env: &rpc-env
+  MYSQL_DSN: "root:${MYSQL_ROOT_PASSWORD:-123456}@tcp(mysql:3306)/cloud-drive?charset=utf8mb4&parseTime=true&loc=Asia%2FShanghai"
+  REDIS_PASSWORD: "${REDIS_PASSWORD:-}"
+  TZ: "Asia/Shanghai"
+
+x-minio-env: &minio-env
+  MINIO_ENDPOINT: "minio:9000"
+  MINIO_ACCESS_KEY: "${MINIO_ROOT_USER:-minioadmin}"
+  MINIO_SECRET_KEY: "${MINIO_ROOT_PASSWORD:-minioadmin}"
+  MINIO_BUCKET: "${MINIO_BUCKET:-cloud-drive}"
+  MINIO_USE_SSL: "false"
+
+services:
+  # ---------------- 基础设施 ----------------
+
+  mysql:
+    image: mysql:8.0
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --default-time-zone=+08:00
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-123456}
+      MYSQL_DATABASE: cloud-drive
+    ports:
+      - "13306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+      # 首次初始化时按文件名顺序执行三份 schema（MYSQL_DATABASE 已创建库）。
+      - ./service/user/model/user.sql:/docker-entrypoint-initdb.d/01-user.sql:ro
+      - ./service/file/model/file.sql:/docker-entrypoint-initdb.d/02-file.sql:ro
+      - ./service/storage/model/storage.sql:/docker-entrypoint-initdb.d/03-storage.sql:ro
+    healthcheck:
+      # 用 TCP 连接校验：初始化阶段的临时实例只监听 socket，因此能等到脚本执行完再变 healthy。
+      test: ["CMD-SHELL", "mysql -h127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD -e 'SELECT 1' >/dev/null 2>&1"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "16379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  etcd:
+    image: quay.io/coreos/etcd:v3.5.21
+    entrypoint: []
+    command:
+      - /usr/local/bin/etcd
+      - --name=etcd0
+      - --data-dir=/etcd-data
+      - --listen-client-urls=http://0.0.0.0:2379
+      - --advertise-client-urls=http://etcd:2379
+      - --listen-peer-urls=http://0.0.0.0:2380
+      - --initial-advertise-peer-urls=http://etcd:2380
+      - --initial-cluster=etcd0=http://etcd:2380
+      - --initial-cluster-state=new
+    ports:
+      - "12379:2379"
+    volumes:
+      - etcd-data:/etcd-data
+    healthcheck:
+      test: ["CMD", "etcdctl", "endpoint", "health"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+
+  # 对象存储。没有 healthcheck：MinIO 镜像不一定带 curl/mc，
+  # 而 storage 服务启动时会重试建桶，等它起来即可自愈。
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+    ports:
+      - "19000:9000"
+      - "19001:9001"
+    volumes:
+      - minio-data:/data
+    restart: unless-stopped
+
+  # ---------------- RPC 服务 ----------------
+
+  user.rpc:
+    build:
+      <<: *build-common
+      args:
+        SERVICE_DIR: ./service/user/rpc
+    image: cloud-drive/user-rpc:dev
+    command: ["-f", "/app/etc/config.yaml"]
+    environment:
+      <<: *rpc-env
+      JWT_SECRET: ${JWT_SECRET:-dev-jwt-secret}
+      USER_SALT: ${USER_SALT:-dev-salt}
+    volumes:
+      - ./deploy/config/user.rpc.yaml:/app/etc/config.yaml:ro
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      etcd:
+        condition: service_healthy
+    restart: unless-stopped
+
+  file.rpc:
+    build:
+      <<: *build-common
+      args:
+        SERVICE_DIR: ./service/file/rpc
+    image: cloud-drive/file-rpc:dev
+    command: ["-f", "/app/etc/config.yaml"]
+    environment:
+      <<: *rpc-env
+    volumes:
+      - ./deploy/config/file.rpc.yaml:/app/etc/config.yaml:ro
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      etcd:
+        condition: service_healthy
+    restart: unless-stopped
+
+  storage.rpc:
+    build:
+      <<: *build-common
+      args:
+        SERVICE_DIR: ./service/storage/rpc
+    image: cloud-drive/storage-rpc:dev
+    command: ["-f", "/app/etc/config.yaml"]
+    environment:
+      <<: [*rpc-env, *minio-env]
+    volumes:
+      - ./deploy/config/storage.rpc.yaml:/app/etc/config.yaml:ro
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      etcd:
+        condition: service_healthy
+      minio:
+        condition: service_started
+    restart: unless-stopped
+
+  # ---------------- API 服务 ----------------
+
+  user-api:
+    build:
+      <<: *build-common
+      args:
+        SERVICE_DIR: ./service/user/api
+    image: cloud-drive/user-api:dev
+    command: ["-f", "/app/etc/config.yaml"]
+    environment:
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-dev-access-secret}
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./deploy/config/user-api.yaml:/app/etc/config.yaml:ro
+    depends_on:
+      etcd:
+        condition: service_healthy
+      user.rpc:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8000/healthz"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+
+  file-api:
+    build:
+      <<: *build-common
+      args:
+        SERVICE_DIR: ./service/file/api
+    image: cloud-drive/file-api:dev
+    command: ["-f", "/app/etc/config.yaml"]
+    environment:
+      INTERNAL_TOKEN: ${INTERNAL_TOKEN:-dev-internal-token}
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://127.0.0.1:8001}
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./deploy/config/file-api.yaml:/app/etc/config.yaml:ro
+    depends_on:
+      etcd:
+        condition: service_healthy
+      file.rpc:
+        condition: service_started
+      storage.rpc:
+        condition: service_started
+      storage-api:
+        condition: service_started
+      user.rpc:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8001/healthz"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+
+  storage-api:
+    build:
+      <<: *build-common
+      args:
+        SERVICE_DIR: ./service/storage/api
+    image: cloud-drive/storage-api:dev
+    command: ["-f", "/app/etc/config.yaml"]
+    environment:
+      <<: *minio-env
+      INTERNAL_TOKEN: ${INTERNAL_TOKEN:-dev-internal-token}
+    ports:
+      - "8002:8002"
+    volumes:
+      - ./deploy/config/storage-api.yaml:/app/etc/config.yaml:ro
+    depends_on:
+      etcd:
+        condition: service_healthy
+      storage.rpc:
+        condition: service_started
+      minio:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8002/readyz"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 20s
+    restart: unless-stopped
+
+  # ---------------- 监控（可选） ----------------
+
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    profiles: ["observability"]
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.retention.time=7d
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./deploy/observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./deploy/observability/alerts.yml:/etc/prometheus/alerts.yml:ro
+      - prometheus-data:/prometheus
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:12.2.0
+    profiles: ["observability"]
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./deploy/observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./deploy/observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+
+volumes:
+  mysql-data:
+  redis-data:
+  etcd-data:
+  minio-data:
+  prometheus-data:
+  grafana-data:

@@ -1,0 +1,33 @@
+Name: file-api
+Host: 0.0.0.0
+Port: 8001
+Timeout: 10000
+MaxBytes: 1048576
+Log:
+  ServiceName: file-api
+  Mode: console
+  Encoding: json
+  Level: info
+FileRpc:
+  Etcd:
+    Hosts:
+      - etcd:2379
+    Key: file.rpc
+StorageRpc:
+  Etcd:
+    Hosts:
+      - etcd:2379
+    Key: storage.rpc
+UserRpc:
+  Etcd:
+    Hosts:
+      - etcd:2379
+    Key: user.rpc
+StorageApi:
+  BaseUrl: http://storage-api:8002
+Internal:
+  Token: ${INTERNAL_TOKEN}
+Share:
+  BaseUrl: ${PUBLIC_BASE_URL}
+Upload:
+  MaxFileBytes: 10737418240

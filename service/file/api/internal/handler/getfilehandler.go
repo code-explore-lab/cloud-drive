@@ -8,13 +8,20 @@ import (
 
 	"cloud-drive/service/file/api/internal/logic"
 	"cloud-drive/service/file/api/internal/svc"
+	"cloud-drive/service/file/api/internal/types"
 	"github.com/zeromicro/go-zero/rest/httpx"
 )
 
 func GetFileHandler(svcCtx *svc.ServiceContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		var req types.FileIDReq
+		if err := httpx.Parse(r, &req); err != nil {
+			httpx.ErrorCtx(r.Context(), w, err)
+			return
+		}
+
 		l := logic.NewGetFileLogic(r.Context(), svcCtx)
-		resp, err := l.GetFile()
+		resp, err := l.GetFile(&req)
 		if err != nil {
 			httpx.ErrorCtx(r.Context(), w, err)
 		} else {

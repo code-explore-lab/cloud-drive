@@ -7,6 +7,7 @@ import (
 	"flag"
 	"fmt"
 
+	"cloud-drive/common/web"
 	"cloud-drive/service/file/api/internal/config"
 	"cloud-drive/service/file/api/internal/handler"
 	"cloud-drive/service/file/api/internal/svc"
@@ -23,10 +24,15 @@ func main() {
 	var c config.Config
 	conf.MustLoad(*configFile, &c)
 
+	ctx := svc.NewServiceContext(c)
+
+	// 统一错误响应（gRPC code -> HTTP 状态）与请求 ID。
+	web.Setup()
+
 	server := rest.MustNewServer(c.RestConf)
 	defer server.Stop()
 
-	ctx := svc.NewServiceContext(c)
+	server.Use(web.RequestID)
 	handler.RegisterHandlers(server, ctx)
 
 	fmt.Printf("Starting server at %s:%d...\n", c.Host, c.Port)
