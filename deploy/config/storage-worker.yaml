@@ -1,0 +1,27 @@
+Name: storage-worker
+Mysql:
+  DataSource: ${MYSQL_DSN}
+CacheRedis:
+  - Host: redis:6379
+    Type: node
+    Pass: ${REDIS_PASSWORD}
+Minio:
+  Endpoint: ${MINIO_ENDPOINT}
+  AccessKey: ${MINIO_ACCESS_KEY}
+  SecretKey: ${MINIO_SECRET_KEY}
+  Bucket: ${MINIO_BUCKET}
+  UseSSL: ${MINIO_USE_SSL}
+Kafka:
+  Brokers:
+    - ${KAFKA_BROKERS}
+  Topic: storage.events
+  GroupID: storage-worker
+Worker:
+  RetryMax: 5
+  Backoff: 2
+  MaxBackoff: 60
+Log:
+  ServiceName: storage-worker
+  Mode: console
+  Encoding: json
+  Level: info
