@@ -1,6 +1,7 @@
 # Kafka 事件驱动对象清理 · 设计文档
 
-> 状态：**设计定稿，待实现**。本文档回答三个问题——为什么用 Kafka 而不是 RabbitMQ、选哪个 Kafka、Kafka 在这个项目里做什么——并给出可照着实现的设计。
+> 状态：**设计定稿**；`common/xkafka` 客户端层已实现，业务链路（outbox / dispatcher / worker）实现中。
+> 本文档回答三个问题——为什么用 Kafka 而不是 RabbitMQ、选哪个 Kafka、Kafka 在这个项目里做什么——并给出可照着实现的设计。
 >
 > 关联：`target.md` Phase 5、`docs/consistency.md`、`docs/adr/0004-consistency-without-2pc.md`、`docs/roadmap.md`。
 
@@ -93,14 +94,41 @@ file-api DeleteFile
    │  publish → Redpanda topic `storage.events` → 标记 published               │
    └──────────────────────────────────────────────────────────────────────────┘
    storage-worker（consumer group）
-      │  ReadMessage
+      │  FetchMessage（手动 commit）
       ├─ 状态 != 'deleting' → commit，跳过（幂等）
       ├─ MinIO Remove 成功 → status='deleted' → commit
-      ├─ 失败且 gc_attempts < 上限 → 不 commit（重投递，at-least-once）
-      └─ 失败且 gc_attempts >= 上限 → 发 `storage.events.dlq` → commit
+      ├─ 失败且 gc_attempts < 上限 → 不 commit；停止消费 → 退避
+      │                              → 重建 consumer 重新入组（从 last committed offset 重投）
+      └─ 失败且 gc_attempts >= 上限 → 发 `storage.events.dlq` 成功后才 commit
    ──────────────────────────────────────────────────────────────
    兜底：jobs/maintenance.go retryObjectDeletes 仍每 10 分钟扫 'deleting'
 ```
+
+### 4.1 消费失败为什么必须「停消费 + 重建」
+
+kafka-go 的 consumer group 语义决定了「失败就不 commit，然后继续处理下一条」**不是** at-least-once：
+
+- `CommitMessages(msg)` 提交的是 `msg.Offset + 1`，提交后一条等于宣告同分区它之前的所有
+  offset 都已处理；
+- group 模式下 `Reader.SetOffset` 返回 `errNotAvailableWithGroup`，进程内无法回退。
+
+因此 worker 的消费循环必须满足：**一旦某条消息需要重试，就立刻停止读该 reader，
+并且绝不 commit 它之后的消息。** 重新入组时 kafka-go 会从 coordinator 取回 committed offset
+（没有才用 `StartOffset`），失败消息会被重新投递。
+
+代价是每次重试触发一次 rebalance；单 worker 的课程项目可以接受。必须配合指数退避，
+否则失败消息会以拉取速度重投，`gc_attempts` 几毫秒就超过上限，MinIO 根本没有恢复时间。
+
+### 4.2 失败分类
+
+| 情况 | 动作 |
+| --- | --- |
+| 消息 JSON / 版本 / 类型 / payload 非法 | DLQ + commit（永久错误） |
+| 对象不存在 / 状态非 `deleting` | commit（幂等跳过） |
+| DB 查询 / 更新失败 | 退避重投，不动 `gc_attempts` |
+| `Store.Remove` 失败且未超上限 | `gc_attempts++`，退避重投（重建 reader） |
+| `Store.Remove` 失败且达上限 | DLQ，成功后 commit；GC 继续兜底 |
+| `Remove` 成功但 `MarkDeleted` 失败 | 退避重投（Remove 幂等，404 视为成功） |
 
 关键点：
 
@@ -109,6 +137,7 @@ file-api DeleteFile
 - dispatcher 只负责「把 outbox 里的待发事件可靠地搬到 broker」，是否真的清理成功由
   `storage_objects.status`（`deleting → deleted`）+ `gc_attempts` 追踪；
 - GC 兜底保持不变，Kafka 是「低延迟解耦快路径」，轮询 GC 是「最终一致性安全网」。
+- DLQ 是告警 / 排查信号，不是清理完成的标志：GC 永远不放弃，事件进了 DLQ 之后对象仍可能被 GC 清掉。
 
 ---
 
@@ -134,6 +163,10 @@ Topic 常量：`storage.events`、`storage.events.dlq`。
 版本兼容策略：消费者按 `Envelope.Version` 分发；未来新增字段只增不改，旧消费者忽略未知字段。
 这是 target.md「设计事件格式和版本兼容策略」的落地。
 
+`event_id` 来自 `outbox_events.event_id`（写事务时生成），dispatcher 重投时保持不变，
+是本项目里做「消息重复投递」去重的稳定标识；当前消费端靠 `status='deleting'` 幂等，
+不需要额外的去重表，`event_id` 先作为排查 / 后续扩展的依据。
+
 ---
 
 ## 6. 改动点清单（供实现参考）
@@ -143,11 +176,15 @@ Topic 常量：`storage.events`、`storage.events.dlq`。
 ### 6.1 依赖
 - `go.mod` 新增 `github.com/segmentio/kafka-go`。
 
-### 6.2 `common/xkafka/`（现有空目录，填入）
+### 6.2 `common/xkafka/`（已完成）
 - `config.go` — `Config{ Brokers []string; Topic string; GroupID string }`，带 go-zero 默认值 tag。
 - `producer.go` — 封装 `kafka.Writer`：`NewProducer` / `Publish(ctx, key, value)` / `Close`。
-- `consumer.go` — 封装 `kafka.Reader`（group）：`NewConsumer` / `ReadMessage` / `CommitMessages` / `Close`。
-- `event.go` — `Envelope` + `ObjectCleanupRequested` + 事件类型/topic 常量。
+- `consumer.go` — 封装 `kafka.Reader`（group，`CommitInterval=0` 手动提交）：
+  `NewConsumer` / `FetchMessage` / `CommitMessages` / `Close`。**不提供 Seek**——group 模式不支持，
+  重试靠重建 consumer（见 4.1）。
+- `event.go` — `Envelope` + `ObjectCleanupRequested` + 事件类型/topic 常量 + `NewEnvelope`。
+- `topics.go` — `EnsureTopics`，启动时显式建 `storage.events` / `storage.events.dlq`
+  （`Writer.AllowAutoTopicCreation` 默认 false，DLQ 生产者更需要显式建）。
 
 ### 6.3 数据库
 - `service/storage/model/storage.sql` 新增 `outbox_events` 表，沿用 `IF NOT EXISTS` 可重放约定：
@@ -155,24 +192,38 @@ Topic 常量：`storage.events`、`storage.events.dlq`。
 ```sql
 CREATE TABLE IF NOT EXISTS `outbox_events` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `event_id` CHAR(36) NOT NULL COMMENT '入事务时生成，重试/重放不变，消费端可据此去重',
     `event_type` VARCHAR(64) NOT NULL,
-    `aggregate_id` VARCHAR(512) NOT NULL,
+    `aggregate_id` VARCHAR(512) NOT NULL COMMENT '消息 key，同 key 保序',
     `payload` JSON NOT NULL,
     `status` VARCHAR(16) NOT NULL DEFAULT 'pending' COMMENT 'pending, published, failed',
     `attempts` INT UNSIGNED NOT NULL DEFAULT 0,
     `last_error` VARCHAR(512) NOT NULL DEFAULT '',
+    `next_attempt_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'dispatcher 退避用',
     `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `published_at` DATETIME DEFAULT NULL,
     PRIMARY KEY (`id`),
-    KEY `idx_outbox_status_created` (`status`, `created_at`)
+    UNIQUE KEY `uk_outbox_events_event_id` (`event_id`),
+    KEY `idx_outbox_events_status_next` (`status`, `next_attempt_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 ```
 
+设计约束：
+
+- `event_id` 在**写 outbox 的同一个事务里**生成，之后每次重投都用同一个值；
+  这样「dispatcher 发布成功但标 published 失败」导致的重投不会产生两个不同的事件 id，
+  消费端才有稳定的去重依据。
+- 查询用 `KEY (status, next_attempt_at)` 而不是 `(status, created_at)`：dispatcher 的条件是
+  「pending 且已到重试时间」，退避后的事件不能被立刻再捞出，否则重试等于空转。
+- 不用 `SELECT ... FOR UPDATE SKIP LOCKED`：单实例 dispatcher 够用；多加实例时再引入，
+  重复投递本来就由消费端幂等兜住。
+
 ### 6.4 storage.rpc（生产者 + dispatcher）
-- `service/storage/model/outboxeventsmodel.go`（新）— 仿 `storageobjectsmodel.go`：
-  `FindPending(ctx, limit)`、`MarkPublished(ctx, id)`、`MarkFailed(ctx, id, attempts, err)`。
+- `service/storage/model/outboxeventsmodel.go`（新，手写、不走 go-zero 缓存）：
+  `InsertInTx(ctx, session, ...)`、`FindPending(ctx, limit)`、`MarkPublished(ctx, id)`、
+  `MarkRetry(ctx, id, attempts, lastError, next)`、`MarkFailed(ctx, id, attempts, lastError)`。
 - `service/storage/rpc/internal/config/config.go` — 新增 `Kafka xkafka.Config` 与
-  `Outbox OutboxConf{Enabled, Interval, BatchSize}`（仿 `MaintenanceConf`）。
+  `Outbox OutboxConf{Enabled, Interval, BatchSize, MaxAttempts}`（仿 `MaintenanceConf`）。
 - `service/storage/rpc/internal/svc/servicecontext.go` — 注入 `OutboxModel` + `Producer`；
   `New` 不立即连接（沿用 `common/objectstore` 的「启动时基础设施未就绪也能起」约定）。
 - `service/storage/rpc/internal/logic/deleteobjectlogic.go` — 改造：不再立即 `Store.Remove`，
@@ -180,7 +231,18 @@ CREATE TABLE IF NOT EXISTS `outbox_events` (
   `AppendVersion`）在同一事务内 `UPDATE storage_objects SET status='deleting'` +
   `INSERT outbox_events`；对象不存在 / 已 `deleted` 仍幂等返回 `Success=true`、不发事件。
 - `service/storage/rpc/internal/jobs/dispatcher.go`（新，仿 `maintenance.go` ticker 循环）—
-  轮询 outbox pending → 组装 Envelope → `Publish` → 标 published；失败累加 attempts、超限标 failed。
+  轮询 outbox pending → 组装 Envelope → `PublishBatch` → 标 published；失败累加 attempts、超限标 failed。
+
+  实现要点：
+
+  | 点 | 做法 |
+  | --- | --- |
+  | 批量 | `FindPending(limit)` 捞一批，一次 `WriteMessages` 投递；逐条 `Publish` 会被 `BatchTimeout` 拖成一批多条往返 |
+  | 稳定 EventID | `Envelope.EventID = outbox.event_id`，不在这里生成 |
+  | 条件更新 | `MarkPublished` 必须带 `where id=? and status='pending'`，避免与重试路径互相覆盖 |
+  | 退避 | 发布失败 → `MarkRetry(attempts+1, next_attempt_at=now()+backoff)`，仍为 pending |
+  | 毒事件隔离 | 单条 payload 无法序列化 → `MarkFailed` 后 `continue`，不阻塞整批 |
+  | 超限 | `attempts >= Outbox.MaxAttempts` → `MarkFailed`；状态留在库里供人工排查 / 重新投递 |
 - `service/storage/rpc/storage.go` — 启动 dispatcher（`if c.Outbox.Enabled`）。
 - `deploy/config/storage.rpc.yaml` — 新增 `Kafka:` / `Outbox:` 段，Brokers 用 `${KAFKA_BROKERS}`。
 
@@ -188,11 +250,20 @@ CREATE TABLE IF NOT EXISTS `outbox_events` (
 - `service/storage/worker/worker.go`（main）、`internal/config/config.go`、
   `internal/svc/servicecontext.go`、`internal/consumer/consumer.go`。
 - `config`：`Name/Log` + `Kafka xkafka.Config`（GroupID=`storage-worker`）+
-  `Minio objectstore.Config` + `Mysql{DataSource}` + `CacheRedis` + `Worker{RetryMax, Backoff}`。
-- `svc`：`ObjectsModel` + `Store`（MinIO）+ consumer reader。
+  `Minio objectstore.Config` + `Mysql{DataSource}` + `CacheRedis` +
+  `Worker{RetryMax, Backoff, MaxBackoff}`。
+  - `RetryMax`：`Store.Remove` 连续失败多少次后进 DLQ（默认 5）；
+  - `Backoff` / `MaxBackoff`：重建 consumer 前的退避，秒；从 `Backoff` 指数增长到 `MaxBackoff`（默认 2 / 60）。
+- `svc`：`ObjectsModel` + `Store`（MinIO）+ DLQ producer。
 - `consumer.go` 处理 `storage.object.cleanup.requested`：查 object → 非 `deleting` 则 commit 跳过；
   `Store.Remove` 成功 → `status='deleted'` + commit；失败 → `gc_attempts++`/`last_error`，
-  未超 `RetryMax` 不 commit（重投递），超限发 DLQ 后 commit。
+  未超 `RetryMax` 则退出本轮、退避后重建 consumer（见 4.1），超限发 DLQ 成功后才 commit。
+  失败分类见 4.2，不要按「不 commit 继续下一条」实现。
+- DLQ 消息：`Value` 原样放原始事件字节；诊断信息放 headers（`x-error` / `x-attempts` / `x-failed-at`），
+  不修改 payload，保证可以从 DLQ 原样回放到主 topic 重放。
+- worker 启动时调用 `EnsureTopics` 建 `storage.events` / `storage.events.dlq`，
+  避免 DLQ 生产者因 topic 不存在而静默失败。
+- 优雅退出：`signal.NotifyContext` → `ctx` 取消 → 关闭 reader / producer（未 commit 的消息下次重投）。
 - `deploy/config/storage-worker.yaml`（新）。
 
 ### 6.6 基础设施

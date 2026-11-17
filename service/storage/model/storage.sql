@@ -61,3 +61,20 @@ CREATE TABLE IF NOT EXISTS `storage_objects` (
     KEY `idx_storage_objects_hash` (`content_hash`),
     KEY `idx_storage_objects_status` (`status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `outbox_events` (
+    `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `event_id` CHAR(36) NOT NULL COMMENT 'Generated in the write transaction; stable across retries',
+    `event_type` VARCHAR(64) NOT NULL,
+    `aggregate_id` VARCHAR(512) NOT NULL COMMENT 'Message key; events with the same key keep their order',
+    `payload` JSON NOT NULL,
+    `status` VARCHAR(16) NOT NULL DEFAULT 'pending' COMMENT 'pending, published, failed',
+    `attempts` INT UNSIGNED NOT NULL DEFAULT 0,
+    `last_error` VARCHAR(512) NOT NULL DEFAULT '',
+    `next_attempt_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Dispatcher backoff deadline',
+    `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `published_at` DATETIME DEFAULT NULL,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_outbox_events_event_id` (`event_id`),
+    KEY `idx_outbox_events_status_next` (`status`, `next_attempt_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
