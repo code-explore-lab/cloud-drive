@@ -25,7 +25,7 @@ func main() {
 	flag.Parse()
 
 	var c config.Config
-	conf.MustLoad(*configFile, &c)
+	conf.MustLoad(*configFile, &c, conf.UseEnv())
 	svcCtx := svc.NewServiceContext(c)
 
 	// bucket 初始化与清理任务放在后台跑：MinIO 比本服务晚启动时也能自愈。

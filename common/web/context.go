@@ -17,6 +17,7 @@ type requestIDKey struct{}
 func RequestID(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		id := r.Header.Get("X-Request-Id")
+		//优先读请求头 `X-Request-Id`；没有 / 太长就自己生成一个随机串
 		if id == "" || len(id) > 64 {
 			id = newRequestID()
 		}
@@ -26,6 +27,8 @@ func RequestID(next http.HandlerFunc) http.HandlerFunc {
 }
 
 // RequestIDFromCtx 返回中间件写入的请求 ID。
+// 从context里面把之前存进去的request ID取出来
+
 func RequestIDFromCtx(ctx context.Context) string {
 	id, _ := ctx.Value(requestIDKey{}).(string)
 	return id
