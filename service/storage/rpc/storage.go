@@ -27,6 +27,12 @@ func main() {
 	var c config.Config
 	conf.MustLoad(*configFile, &c, conf.UseEnv())
 	svcCtx := svc.NewServiceContext(c)
+	// 先注册 producer 的关闭，保证 cancel 先执行：dispatcher 停下来之后才关 writer。
+	defer func() {
+		if err := svcCtx.Producer.Close(); err != nil {
+			logx.Errorf("close kafka producer failed: %v", err)
+		}
+	}()
 
 	// bucket 初始化与清理任务放在后台跑：MinIO 比本服务晚启动时也能自愈。
 	ctx, cancel := context.WithCancel(context.Background())
@@ -35,6 +41,11 @@ func main() {
 		jobs.NewMaintenance(svcCtx).Start(ctx)
 	} else {
 		logx.Info("storage maintenance is disabled by config")
+	}
+	if c.Outbox.Enabled {
+		jobs.NewDispatcher(svcCtx).Start(ctx)
+	} else {
+		logx.Info("storage outbox dispatcher is disabled by config")
 	}
 
 	s := zrpc.MustNewServer(c.RpcServerConf, func(grpcServer *grpc.Server) {

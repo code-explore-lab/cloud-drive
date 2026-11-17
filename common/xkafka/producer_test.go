@@ -1,6 +1,9 @@
 package xkafka
 
-import "testing"
+import (
+	"context"
+	"testing"
+)
 
 func TestMessageKey(t *testing.T) {
 	if got := messageKey(""); got != nil {
@@ -10,6 +13,20 @@ func TestMessageKey(t *testing.T) {
 	got := messageKey("u/7/a.txt")
 	if string(got) != "u/7/a.txt" {
 		t.Fatalf("messageKey = %q, want u/7/a.txt", got)
+	}
+}
+
+func TestPublishBatchEmptyIsNoop(t *testing.T) {
+	// 空批次不应连接 broker，直接返回 nil。
+	p := NewProducer(Config{Brokers: []string{"127.0.0.1:1"}})
+	defer func() {
+		if err := p.Close(); err != nil {
+			t.Fatalf("Close: %v", err)
+		}
+	}()
+
+	if err := p.PublishBatch(context.Background(), nil); err != nil {
+		t.Fatalf("PublishBatch(nil): %v", err)
 	}
 }
 

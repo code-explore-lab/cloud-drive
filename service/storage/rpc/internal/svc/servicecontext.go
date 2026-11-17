@@ -2,6 +2,7 @@ package svc
 
 import (
 	"cloud-drive/common/objectstore"
+	"cloud-drive/common/xkafka"
 	"cloud-drive/service/storage/model"
 	"cloud-drive/service/storage/rpc/internal/config"
 
@@ -16,6 +17,7 @@ type ServiceContext struct {
 	PartsModel   model.UploadPartsModel
 	TasksModel   model.UploadTasksModel
 	OutboxModel  model.OutboxEventsModel
+	Producer     *xkafka.Producer
 	Store        *objectstore.Store
 }
 
@@ -35,6 +37,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		PartsModel:   model.NewUploadPartsModel(conn, c.CacheRedis),
 		TasksModel:   model.NewUploadTasksModel(conn, c.CacheRedis),
 		OutboxModel:  model.NewOutboxEventsModel(conn),
+		Producer:     xkafka.NewProducer(c.Kafka),
 		Store:        store,
 	}
 }

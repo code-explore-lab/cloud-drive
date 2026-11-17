@@ -1,5 +1,7 @@
 package xkafka
 
+import "strings"
+
 // Config 是 Kafka 生产者/消费者的通用配置。
 // 由 storage.rpc / storage-worker 的 Config 直接嵌入，交给 conf.MustLoad 统一加载。
 type Config struct {
@@ -20,10 +22,19 @@ type Config struct {
 var defaultBrokers = []string{"redpanda:9092"}
 
 // withDefaults 填充空字段，保证直接构造的 Config 也能正常工作。
-// 已显式配置的字段原样保留。
+// 已显式配置的字段原样保留；配置文件里的 `${KAFKA_BROKERS}` 在环境变量缺失时
+// 会展开成空串，这种占位项按「未配置」处理，否则会去连空地址。
 func (c Config) withDefaults() Config {
-	if len(c.Brokers) == 0 {
+	brokers := make([]string, 0, len(c.Brokers))
+	for _, broker := range c.Brokers {
+		if broker = strings.TrimSpace(broker); broker != "" {
+			brokers = append(brokers, broker)
+		}
+	}
+	if len(brokers) == 0 {
 		c.Brokers = append([]string(nil), defaultBrokers...)
+	} else {
+		c.Brokers = brokers
 	}
 	if c.Topic == "" {
 		c.Topic = TopicStorageEvents

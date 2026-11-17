@@ -51,6 +51,20 @@ func (p *Producer) PublishMessage(ctx context.Context, msg kafka.Message) error 
 	return p.writer.WriteMessages(ctx, msg)
 }
 
+// PublishBatch 一次写入多条消息，减少逐条发送的往返。
+//
+// kafka-go 的 WriteMessages 要么全部成功，要么返回一个错误但不指出具体哪几条失败；
+// 调用方在失败时应把整批当作「可能部分成功」处理（重投 + 消费端幂等），不要只重发一部分。
+func (p *Producer) PublishBatch(ctx context.Context, msgs []kafka.Message) error {
+	if len(msgs) == 0 {
+		return nil
+	}
+	if p.writer == nil {
+		return fmt.Errorf("xkafka: producer is not initialized")
+	}
+	return p.writer.WriteMessages(ctx, msgs...)
+}
+
 // messageKey 把空 key 转成 nil。
 // kafka.Hash 只对 nil key 做 round-robin；[]byte("") 是合法的非 nil key，
 // 会被当成同一个 key 哈希，导致所有空 key 消息落到同一分区。

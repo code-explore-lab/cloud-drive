@@ -21,6 +21,15 @@ Maintenance:
   Interval: 600
   UploadTTL: 24
   BatchSize: 200
+Kafka:
+  Brokers:
+    - ${KAFKA_BROKERS}
+  Topic: storage.events
+Outbox:
+  Enabled: true
+  Interval: 1
+  BatchSize: 100
+  MaxAttempts: 5
 Log:
   ServiceName: storage.rpc
   Mode: console

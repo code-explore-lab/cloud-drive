@@ -13,6 +13,15 @@ func TestConfigWithDefaults(t *testing.T) {
 	}
 }
 
+func TestConfigWithDefaultsDropsBlankBrokers(t *testing.T) {
+	// 未设置 ${KAFKA_BROKERS} 时列表里会有一个空串，应回退到默认地址。
+	got := Config{Brokers: []string{"", "  "}}.withDefaults()
+
+	if len(got.Brokers) != 1 || got.Brokers[0] != "redpanda:9092" {
+		t.Fatalf("Brokers = %v, want [redpanda:9092]", got.Brokers)
+	}
+}
+
 func TestConfigWithDefaultsReturnsBrokerCopy(t *testing.T) {
 	got := Config{}.withDefaults()
 	got.Brokers[0] = "mutated:9092"
