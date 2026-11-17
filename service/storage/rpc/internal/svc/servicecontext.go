@@ -15,6 +15,7 @@ type ServiceContext struct {
 	ObjectsModel model.StorageObjectsModel
 	PartsModel   model.UploadPartsModel
 	TasksModel   model.UploadTasksModel
+	OutboxModel  model.OutboxEventsModel
 	Store        *objectstore.Store
 }
 
@@ -33,6 +34,7 @@ func NewServiceContext(c config.Config) *ServiceContext {
 		ObjectsModel: model.NewStorageObjectsModel(conn, c.CacheRedis),
 		PartsModel:   model.NewUploadPartsModel(conn, c.CacheRedis),
 		TasksModel:   model.NewUploadTasksModel(conn, c.CacheRedis),
+		OutboxModel:  model.NewOutboxEventsModel(conn),
 		Store:        store,
 	}
 }

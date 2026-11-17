@@ -2,7 +2,9 @@ package model
 
 import (
 	"context"
+	"fmt"
 
+	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/cache"
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 )
@@ -18,6 +20,9 @@ type (
 		FindByStatus(ctx context.Context, status string, limit int64) ([]*StorageObjects, error)
 		// CountByStatus 统计某个状态的对象数量，用于暴露指标。
 		CountByStatus(ctx context.Context, status string) (int64, error)
+		// Invalidate 失效按 id 与 object_key 建立的两份缓存副本。
+		// 给绕过 model 的定向 UPDATE（事务内改状态、worker 标记完成/失败）在提交后调用。
+		Invalidate(ctx context.Context, id uint64, objectKey string)
 	}
 
 	customStorageObjectsModel struct {
@@ -53,4 +58,16 @@ func (m *customStorageObjectsModel) CountByStatus(ctx context.Context, status st
 	err := m.QueryRowNoCacheCtx(ctx, &count,
 		"select count(*) from `storage_objects` where `status` = ?", status)
 	return count, err
+}
+
+// Invalidate 删除对象在缓存里的两份副本（id 与 object_key 各一份）。
+// 缓存失效失败只影响读到旧数据的窗口长度，不应让已经提交的业务失败。
+func (m *customStorageObjectsModel) Invalidate(ctx context.Context, id uint64, objectKey string) {
+	err := m.DelCacheCtx(ctx,
+		fmt.Sprintf("%s%v", cacheStorageObjectsIdPrefix, id),
+		fmt.Sprintf("%s%v", cacheStorageObjectsObjectKeyPrefix, objectKey))
+	if err != nil {
+		logx.WithContext(ctx).Errorf("invalidate storage object cache failed: id=%d object_key=%s: %v",
+			id, objectKey, err)
+	}
 }
