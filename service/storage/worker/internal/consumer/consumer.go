@@ -180,23 +180,23 @@ func (w *Worker) cleanupObject(ctx context.Context, key string) outcome {
 	}
 
 	if err := w.svcCtx.Store.Remove(ctx, key); err != nil {
-		obj.GcAttempts++
-		obj.LastError = truncate(err.Error(), maxLastErrorLen)
-		if updateErr := w.svcCtx.ObjectsModel.Update(ctx, obj); updateErr != nil {
-			return outcome{action: actionRetry, cause: updateErr}
+		affected, bumpErr := w.svcCtx.ObjectsModel.BumpGCAttempts(ctx, obj.Id, key,
+			truncate(err.Error(), maxLastErrorLen))
+		if bumpErr != nil {
+			return outcome{action: actionRetry, cause: bumpErr}
 		}
-		attempts := int(obj.GcAttempts)
+		if affected == 0 {
+			// 读取之后对象已被 GC / 其他 worker 改了状态，按幂等处理。
+			return outcome{action: actionCommit}
+		}
+		attempts := int(obj.GcAttempts) + 1
 		if uint64(attempts) >= w.cfg.Worker.RetryMax {
 			return outcome{action: actionDLQ, cause: err, attempts: attempts}
 		}
 		return outcome{action: actionRetry, cause: err, attempts: attempts}
 	}
 
-	obj.Status = "deleted"
-	obj.DeletedAt.Valid = true
-	obj.DeletedAt.Time = time.Now()
-	obj.LastError = ""
-	if err := w.svcCtx.ObjectsModel.Update(ctx, obj); err != nil {
+	if _, err := w.svcCtx.ObjectsModel.MarkDeleted(ctx, obj.Id, key); err != nil {
 		// Remove 幂等（404 视为成功），所以这里退避重投是安全的。
 		return outcome{action: actionRetry, cause: err}
 	}
