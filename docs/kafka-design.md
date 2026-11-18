@@ -1,6 +1,7 @@
 # Kafka 事件驱动对象清理 · 设计文档
 
-> 状态：**设计定稿**；`common/xkafka` 客户端层已实现，业务链路（outbox / dispatcher / worker）实现中。
+> 状态：**已实现**；`common/xkafka`、outbox、dispatcher、storage-worker 均已完成，
+> 并已接入 docker compose 与 CI（端到端验证步骤见 §7）。
 > 本文档回答三个问题——为什么用 Kafka 而不是 RabbitMQ、选哪个 Kafka、Kafka 在这个项目里做什么——并给出可照着实现的设计。
 >
 > 关联：`target.md` Phase 5、`docs/consistency.md`、`docs/adr/0004-consistency-without-2pc.md`、`docs/roadmap.md`。

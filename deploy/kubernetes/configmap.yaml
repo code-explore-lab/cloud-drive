@@ -169,6 +169,10 @@ data:
       Interval: 600
       UploadTTL: 24
       BatchSize: 200
+    # 集群清单没有 Redpanda 与 storage-worker：关闭 outbox dispatcher，
+    # 避免事件永远堆在 outbox_events。对象清理继续由 maintenance 的轮询 GC 兜底。
+    Outbox:
+      Enabled: false
     Log:
       ServiceName: storage.rpc
       Mode: console

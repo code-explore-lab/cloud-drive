@@ -61,7 +61,7 @@ file.rpc.DeleteFile      软删文件 + 撤销分享           ← 本地事务�
        │
        ├─► user.rpc.ReleaseUsedQuota                   ← 失败只记日志
        │
-       └─► storage.rpc.DeleteObject（每个对象一次）      ← 失败由 GC 重试
+       └─► storage.rpc.DeleteObject（每个对象一次）      ← 事务内写 outbox，异步清理
 ```
 
 顺序不能反：先让文件在业务上不可见（`deleted_at`），再做外部清理。
@@ -72,6 +72,10 @@ file.rpc.DeleteFile      软删文件 + 撤销分享           ← 本地事务�
 
 - `DeleteFile` 第二次调用返回 `changed=false`，文件服务就不会再次归还配额；
 - `DeleteObject` 对已删除对象直接返回成功。
+
+`DeleteObject` 现在只做两件事（同一事务）：把对象置为 `deleting`、写入 `outbox_events`，
+随后立即返回成功。真正的 MinIO 删除由 `storage.rpc` 的 dispatcher 投递到 Kafka、
+`storage-worker` 异步执行（见 §3.2）；对象是否真的删掉，以 `storage_objects.status` 为准。
 
 ### 2.3 上传初始化
 
@@ -100,7 +104,8 @@ file.rpc.CreateFile   →  user.rpc.ReserveQuota  →  storage.rpc.InitUpload
 3. **删除反向来**：先让数据库状态变成不可见/待删除，再删对象。
 4. **失败要留痕、要能重试**：
    - `storage_objects.gc_attempts` / `last_error` 记录失败原因；
-   - 后台维护任务每 10 分钟重试 `status='deleting'` 的对象；
+   - 事件驱动的快路径：dispatcher 重投 outbox，worker 按退避重试，超限进 DLQ；
+   - 后台维护任务每 10 分钟重试 `status='deleting'` 的对象（最终兜底）；
    - 指标 `clouddrive_storage_object_gc_backlog` 与 `clouddrive_storage_object_gc_failures_total`
      暴露积压与失败，配了告警。
 
@@ -119,7 +124,24 @@ file.rpc.CreateFile   →  user.rpc.ReserveQuota  →  storage.rpc.InitUpload
 这些任务全部是**幂等且可重入**的，多副本同时跑也不会产生冲突
 （每个动作都是"把状态推进到目标值"，重复执行无副作用）。
 
-### 3.2 已知窗口
+### 3.2 事件驱动快路径（Kafka）
+
+对象清理在轮询 GC 之外多了一条低延迟路径：
+
+| 环节 | 位置 | 作用 |
+| --- | --- | --- |
+| outbox 写入 | `DeleteObject` 事务内 | 状态变更与「待发事件」同事务，事件不丢 |
+| dispatcher | `storage/rpc/internal/jobs/dispatcher.go` | 轮询 `outbox_events`，批量投递 `storage.events`，退避重试，超限标 `failed` |
+| 消费者 | `storage/worker/internal/consumer` | 删除 MinIO 对象；失败时 `gc_attempts++` 后退避重投，达上限发 `storage.events.dlq` |
+
+一致性边界：
+
+- **at-least-once**，重复投递由 `status='deleting'` 幂等兜住；
+- 失败重试复用 `gc_attempts` / `last_error`，不新增重复字段；
+- 事件进 DLQ 不代表对象不再清理——GC 仍会继续尝试，DLQ 只是告警与排查信号；
+- `outbox_events` 的 `published` 行暂不清理，属于已知的小数据量遗留（见 ADR-0007）。
+
+### 3.3 已知窗口
 
 | 窗口 | 后果 | 兜底 |
 | --- | --- | --- |
@@ -127,6 +149,8 @@ file.rpc.CreateFile   →  user.rpc.ReserveQuota  →  storage.rpc.InitUpload
 | 对象删除成功、`status='deleted'` 更新失败 | 记录说 available，实际对象没了 | 下载时报错；reconcile 能发现"记录在但对象不在" |
 | 版本追加成功、配额提交失败 | 配额少扣 | reconcile 对比版本总大小与 used_bytes |
 | 目录递归删除中途失败 | 部分子项已删 | 重新调用删除（幂等），会继续删剩下的 |
+| dispatcher 投递成功、标 `published` 失败 | 同一事件被重复投递 | 消费端按 `status='deleting'` 幂等，重复消息直接 commit |
+| Kafka 长期不可用 / worker 停止 | 事件停留在 `outbox_events`，快路径清理暂停 | 事件不丢；GC 每 10 分钟兜底清理 |
 
 ---
 
@@ -172,5 +196,6 @@ go run ./tools/reconcile -config service/storage/rpc/etc/storage.yaml
 - [x] 摘要不符 → 删除已合并对象并标记失败
 - [x] 上传超时 → 任务失败 + 临时分片清理
 - [x] 对象删除失败 → 进入 `deleting`，后台重试，有指标与告警
+- [x] 删除后对象由 storage-worker 秒级清理；失败退避重投，超限进 DLQ；GC 兜底仍有效
 - [x] 服务重启 → `completing` 残留被回收
 - [ ] 配额账目自动修复（目前只报告，需要人工确认）

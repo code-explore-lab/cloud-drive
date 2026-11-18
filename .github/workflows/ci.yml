@@ -1,6 +1,6 @@
 name: CI
 
-# 每次 push / PR 都跑：格式、静态检查、单元测试、构建（Go + 6 个 Docker 镜像）、
+# 每次 push / PR 都跑：格式、静态检查、单元测试、构建（Go + 7 个 Docker 镜像）、
 # 以及 docker-compose.yml 的语法校验。
 # 单元测试不依赖 MySQL/Redis/etcd/MinIO，所以 test 任务不启动 service container。
 
@@ -74,6 +74,8 @@ jobs:
             service_dir: ./service/file/rpc
           - service: storage-rpc
             service_dir: ./service/storage/rpc
+          - service: storage-worker
+            service_dir: ./service/storage/worker
     steps:
       - name: Checkout
         uses: actions/checkout@v4

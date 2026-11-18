@@ -1,8 +1,8 @@
 # 镜像构建说明
 
-CloudDrive 的 6 个 Go 服务共用仓库根目录的同一个 `Dockerfile`，通过构建参数
+CloudDrive 的 7 个 Go 服务共用仓库根目录的同一个 `Dockerfile`，通过构建参数
 `SERVICE_DIR` 决定编译哪个 `main` 包。这样做的好处是依赖解析、基础镜像、非 root 用户
-和安全配置只有一份，不会出现 6 个 Dockerfile 逐渐分叉。
+和安全配置只有一份，不会出现 7 个 Dockerfile 逐渐分叉。
 
 ## 一、服务与构建参数
 
@@ -14,6 +14,7 @@ CloudDrive 的 6 个 Go 服务共用仓库根目录的同一个 `Dockerfile`，�
 | user-rpc | `./service/user/rpc` | `cloud-drive/user-rpc:dev` | `cloud-drive/user-rpc:latest` |
 | file-rpc | `./service/file/rpc` | `cloud-drive/file-rpc:dev` | `cloud-drive/file-rpc:latest` |
 | storage-rpc | `./service/storage/rpc` | `cloud-drive/storage-rpc:dev` | `cloud-drive/storage-rpc:latest` |
+| storage-worker | `./service/storage/worker` | `cloud-drive/storage-worker:dev` | （尚未加入 K8s 清单） |
 
 `SERVICE_DIR` 的默认值是 `./service/user/api`，所以不带参数构建出来的就是 user-api。
 
@@ -82,7 +83,7 @@ docker push "$IMAGE:$TAG"
 `cloud-drive/user-api:latest` 换成 `$IMAGE:$TAG`。生产环境不要依赖 `latest`，
 因为 `latest` 不可复现，也无法准确回滚。
 
-批量构建 6 个服务：
+批量构建 7 个服务：
 
 ```bash
 for pair in \
@@ -91,7 +92,8 @@ for pair in \
   "storage-api ./service/storage/api" \
   "user-rpc ./service/user/rpc" \
   "file-rpc ./service/file/rpc" \
-  "storage-rpc ./service/storage/rpc"; do
+  "storage-rpc ./service/storage/rpc" \
+  "storage-worker ./service/storage/worker"; do
   set -- $pair
   docker build --build-arg SERVICE_DIR="$2" -t "cloud-drive/$1:dev" .
 done

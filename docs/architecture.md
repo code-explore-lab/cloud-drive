@@ -26,10 +26,17 @@ Client
    users /           folders / files /        upload_tasks /
    user_quotas /     file_versions /          upload_parts /
    refresh_tokens    shares                   storage_objects
-                                                   │
-                                                   ▼
+                                                   │  ▲
+                                                   ▼  │ 状态推进
                                               MinIO（对象内容）
+                                                   ▲
+                                                   │ Remove
+   storage.rpc ──outbox→dispatcher──► Redpanda（storage.events）──► storage-worker
 ```
+
+对象清理是异步的：`storage.rpc` 在事务里写 outbox，dispatcher 投递到 Redpanda，
+`storage-worker` 消费后删除 MinIO 对象并把状态推进到 `deleted`。
+后台轮询 GC 仍然存在，作为 Kafka 链路不可用时的最终一致性兜底。
 
 ## 2. 为什么这样划分
 
@@ -115,6 +122,27 @@ Client → file-api GET  /v1/shares/:token/content  （再校验一次并代理�
 分享 token 与对象 Key 是两套完全不同的标识，token 泄露不等于对象泄露；
 撤销分享只需把 `shares.status` 置 0。
 
+### 3.4 对象清理（事件驱动）
+
+```text
+file-api DeleteFile
+  └─> storage.rpc DeleteObject
+         │ 同一事务：status='deleting' + INSERT outbox_events
+         └─ 返回 Success=true（入队即成功）
+
+storage.rpc dispatcher（轮询 outbox_events）
+  └─> PublishBatch → Redpanda topic `storage.events` → MarkPublished
+
+storage-worker（consumer group）
+  ├─ 非 deleting / 对象不存在 → commit（幂等）
+  ├─ Remove 成功 → status='deleted' → commit
+  ├─ 失败未超限 → 不 commit，退避后重建 consumer 重新入组（at-least-once）
+  └─ 失败达上限 → storage.events.dlq 成功后才 commit
+```
+
+兜底：`maintenance.go` 的 `retryObjectDeletes` 仍每 10 分钟扫描 `status='deleting'`。
+设计细节见 `docs/kafka-design.md`，决策见 `docs/adr/0007-event-driven-object-cleanup.md`。
+
 ## 4. 服务治理
 
 - **服务发现**：etcd。RPC 客户端通过 `zrpc` 自动发现实例。
@@ -125,9 +153,11 @@ Client → file-api GET  /v1/shares/:token/content  （再校验一次并代理�
 
 ## 5. 部署形态
 
-- 本地：Docker Compose，六个服务 + 四个基础设施容器。
+- 本地：Docker Compose，七个服务（含 `storage-worker`）+ 五个基础设施容器
+  （MySQL / Redis / etcd / MinIO / Redpanda）。
 - Kubernetes：Deployment（无状态服务）+ StatefulSet（MySQL/Redis/etcd/MinIO）。
   真实生产环境应把基础设施换成托管服务。
+  当前清单尚未包含 Redpanda 与 `storage-worker`（见 `deploy/kubernetes/README.md`）。
 
 ## 6. 一个请求的完整视角
 

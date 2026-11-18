@@ -22,7 +22,7 @@
 | 文件分享 | 不可预测 token（只存摘要）、bcrypt 密码、有效期、最大访问次数、可撤销 |
 | 版本管理 | 每次上传追加版本；列表、回滚（回滚=追加新版本，历史不被改写） |
 | 配额 | 预占 / 提交 / 归还三段式，删除文件归还已用额度 |
-| 对象生命周期 | 临时分片清理、删除失败重入队、后台 GC 重试、按前缀清理孤儿分片 |
+| 对象生命周期 | 删除走事务性 outbox + Kafka，`storage-worker` 异步清理（失败退避重试、超限进 DLQ）；临时分片清理、后台 GC 兜底、按前缀清理孤儿分片 |
 | 统一错误响应 | gRPC code → HTTP 状态码 + 稳定错误码 + requestId |
 | 可观测性 | 结构化 JSON 日志、`/metrics`（go-zero 内置 + 业务指标）、Prometheus 告警规则、Grafana 看板 |
 | 部署 | Docker Compose 一键启动；Kubernetes 清单；GitHub Actions CI |
@@ -31,7 +31,7 @@
 ### 明确还未实现（见 [docs/roadmap.md](docs/roadmap.md)）
 
 - Web 前端界面（当前只提供 HTTP API）。
-- Kafka 异步任务、Redis 缓存优化、OpenTelemetry 链路追踪。
+- Redis 缓存优化、OpenTelemetry 链路追踪。
 - 分享整个目录、秒传/去重、跨用户协作权限。
 - 多副本下的全局限流（当前是进程内令牌桶）。
 
@@ -60,6 +60,7 @@
                                                (MySQL)    (对象存储)
 
      服务间：gRPC + etcd 服务发现（除下载/上传字节流走 HTTP 数据面）
+     异步：storage.rpc（outbox+dispatcher）→ Redpanda(storage.events) → storage-worker → MinIO
      监控：Prometheus + Grafana（可选 profile）
 ```
 
@@ -84,6 +85,7 @@ docker compose ps             # 等所有服务变成 healthy / running
 | Redis | 16379 | go-zero 缓存、限流辅助 |
 | etcd | 12379 | 服务注册与发现 |
 | MinIO | 19000 / 19001 | 对象存储 API / 控制台 |
+| Redpanda | 19092 | Kafka 协议 broker（`storage.events` / `storage.events.dlq`） |
 
 RPC 端口（9000/9001/9002）只在 compose 网络内部使用。
 
@@ -127,10 +129,11 @@ curl -s "http://127.0.0.1:8001/v1/files?parentId=0&page=1&pageSize=20" -H "Autho
 1. 只启动基础设施：
 
 ```bash
-docker compose up -d mysql redis etcd minio
+docker compose up -d mysql redis etcd minio redpanda
 ```
 
-2. 依次启动六个服务（各自的 `etc/*.yaml` 已按 `127.0.0.1:13306/16379/12379/19000` 配好）：
+2. 依次启动七个服务（各自的 `etc/*.yaml` 已按 `127.0.0.1:13306/16379/12379/19000/19092` 配好；
+   `storage-worker` 的 `etc/storage-worker.yaml` 里 Kafka 指向 `127.0.0.1:19092`）：
 
 ```bash
 go run ./service/user/rpc      -f service/user/rpc/etc/user.yaml
@@ -139,6 +142,7 @@ go run ./service/storage/rpc   -f service/storage/rpc/etc/storage.yaml
 go run ./service/user/api      -f service/user/api/etc/user-api.yaml
 go run ./service/storage/api   -f service/storage/api/etc/storage-api.yaml
 go run ./service/file/api      -f service/file/api/etc/file-api.yaml
+go run ./service/storage/worker -f service/storage/worker/etc/storage-worker.yaml
 ```
 
 3. 数据库表结构按顺序执行：
@@ -162,11 +166,12 @@ cloud-drive/
 │   ├── jwtx/ cryptx/       # JWT 与密码哈希
 │   ├── ratelimit/          # 进程内令牌桶（登录限流）
 │   ├── ctxdata/            # 上下文用户信息
-│   └── metrics/            # 业务指标
+│   ├── metrics/            # 业务指标
+│   └── xkafka/             # Kafka 生产者/消费者、事件信封、建 topic
 ├── service/
 │   ├── user/{api,rpc,model}
 │   ├── file/{api,rpc,model}
-│   └── storage/{api,rpc,model}
+│   └── storage/{api,rpc,worker,model}
 ├── deploy/
 │   ├── config/             # 容器内配置（挂载进 /app/etc/config.yaml）
 │   ├── docker/             # 镜像构建说明
@@ -243,7 +248,10 @@ docker compose --profile observability up -d prometheus grafana
 - **版本占用空间**：历史版本的对象保留，配额按所有版本的对象计费。
 - **目录列表分页**：目录全量返回、文件分页返回（避免跨表分页的复杂度）。
 - **MinIO 单桶**：所有用户共用 `cloud-drive` bucket，靠 Key 前缀隔离。
-- **无 Web 前端**、**无 Kafka/OTel**：见 roadmap。
+- **outbox 历史不清理**：`outbox_events` 中 `published` 的行会一直保留（数据量小），
+  后续需要归档/删除任务。
+- **Kubernetes 清单不含 Kafka**：`deploy/kubernetes` 目前只有 Redpanda 之前的六个服务。
+- **无 Web 前端**、**无 OpenTelemetry 链路追踪**：见 roadmap。
 
 ---
 
@@ -260,8 +268,9 @@ docker compose --profile observability up -d prometheus grafana
 | [docs/testing.md](docs/testing.md) | 测试分层与如何跑 |
 | [docs/performance.md](docs/performance.md) | 性能测试方法（目前没有编造的数字） |
 | [docs/troubleshooting.md](docs/troubleshooting.md) | 常见故障与定位步骤 |
+| [docs/kafka-design.md](docs/kafka-design.md) | 对象清理事件化：outbox、Kafka、重试、死信与兜底 |
 | [docs/roadmap.md](docs/roadmap.md) | Phase 0-6 完成状态 |
-| [docs/adr/](docs/adr/) | 架构决策记录（6 篇） |
+| [docs/adr/](docs/adr/) | 架构决策记录（7 篇） |
 | [docs/incidents/](docs/incidents/) | 真实故障的分析与修复记录 |
 | [deploy/README.md](deploy/README.md) | Compose 部署说明 |
 | [deploy/kubernetes/README.md](deploy/kubernetes/README.md) | Kubernetes 部署说明 |

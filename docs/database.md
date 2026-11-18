@@ -6,7 +6,7 @@
 | --- | --- | --- |
 | `service/user/model/user.sql` | user.rpc | `users`、`user_quotas`、`refresh_tokens` |
 | `service/file/model/file.sql` | file.rpc | `folders`、`files`、`file_versions`、`shares` |
-| `service/storage/model/storage.sql` | storage.rpc | `upload_tasks`、`upload_parts`、`storage_objects` |
+| `service/storage/model/storage.sql` | storage.rpc | `upload_tasks`、`upload_parts`、`storage_objects`、`outbox_events` |
 
 开发阶段共用一个 MySQL 实例（库名 `cloud-drive`），但没有任何跨服务的 JOIN 或外键。
 这条约束是刻意的：以后拆库时不需要改查询。
@@ -211,6 +211,26 @@ update upload_tasks set status = 'completing'
 
 `status != available` 的对象对下载方一律表现为"不存在"，避免读到半成品。
 
+### outbox_events
+
+事务性 outbox：业务事务里写一条待发事件，由 dispatcher 投递到 Kafka 后标记完成。
+
+| 字段 | 说明 |
+| --- | --- |
+| event_id | CHAR(36)，**写事务时生成**，重试/重放保持不变；唯一 |
+| event_type | 例如 `storage.object.cleanup.requested` |
+| aggregate_id | 消息 key（这里是 `object_key`），同 key 保持顺序 |
+| payload | 事件体 JSON（`ObjectCleanupRequested`） |
+| status | `pending` → `published`；超过 `MaxAttempts` 为 `failed` |
+| attempts | dispatcher 投递失败次数 |
+| last_error | 最近一次投递错误（截断到 512） |
+| next_attempt_at | 退避截止时间；`FindPending` 只取 `<= now()` 的行 |
+| published_at | 投递成功时间 |
+
+约束：`UNIQUE (event_id)` 保证同一事件不会被写出两条；`(status, next_attempt_at)` 支撑
+dispatcher 的「pending 且已到重试时间」扫描。没有用 `SKIP LOCKED`：单实例 dispatcher 足够，
+重复投递由消费端幂等兜住。`published` 行当前不清理（数据量小，见 ADR-0007 的代价说明）。
+
 ---
 
 ## 4. 索引设计
@@ -229,6 +249,8 @@ update upload_tasks set status = 'completing'
 | upload_parts | `(upload_id, part_number)` UK | 分片幂等 |
 | storage_objects | `object_key` UK | 元数据查询 |
 | storage_objects | `(status)` | GC 扫描 |
+| outbox_events | `event_id` UK | 事件去重 / 排查 |
+| outbox_events | `(status, next_attempt_at)` | dispatcher 扫描待发与到期重试 |
 
 没有为"模糊搜索文件名"建索引：当前接口不支持模糊搜索，等有真实需求再加。
 

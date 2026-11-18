@@ -1,12 +1,12 @@
 # Docker 部署说明
 
-全容器化启动：MySQL、Redis、etcd、MinIO 和 6 个 Go 服务都跑在 compose 里。
+全容器化启动：MySQL、Redis、etcd、MinIO、Redpanda 和 7 个 Go 服务都跑在 compose 里。
 
 ## 前置要求
 
 - Docker 20.10+（Docker Desktop 或 Linux 上的 dockerd）
 - 首次构建需要能访问 Go module proxy 和镜像仓库
-- 建议给 Docker 至少 4 CPU / 6GB 内存：6 个服务同时编译时资源不足会让 BuildKit 崩溃
+- 建议给 Docker 至少 4 CPU / 6GB 内存：7 个服务同时编译时资源不足会让 BuildKit 崩溃
   （典型报错：`failed to receive status: rpc error: code = Unavailable ... EOF`）
   构建卡住时可以用 `COMPOSE_PARALLEL_LIMIT=1 docker compose build` 串行构建
 
@@ -34,8 +34,10 @@ API 端口：
 | Redis | 16379 | 缓存 |
 | etcd | 12379 | 服务注册与发现 |
 | MinIO | 19000 / 19001 | 对象存储 API / 控制台 |
+| Redpanda | 19092 | Kafka 协议 broker（对象清理事件） |
 
 RPC 端口（9000/9001/9002）只在 compose 网络内部使用。
+`storage-worker` 不暴露端口、不注册 etcd，只消费 `storage.events` 并清理 MinIO 对象。
 每个服务内置的 go-zero dev server 在容器内 `:6060` 暴露 `/healthz` 与 `/metrics`，
 Prometheus 通过容器名抓取，不需要映射到宿主机。
 

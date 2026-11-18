@@ -10,6 +10,7 @@
 | [0004](0004-consistency-without-2pc.md) | 跨资源一致性用编排 + 幂等 + 补偿，不做分布式事务 | 已采纳 |
 | [0005](0005-chunked-upload-compose.md) | 分片先写临时对象，完成时服务端合并 | 已采纳 |
 | [0006](0006-optional-hash-verification.md) | 内容摘要按需校验，不做默认全量校验 | 已采纳 |
+| [0007](0007-event-driven-object-cleanup.md) | 对象清理改为 outbox + Kafka 事件驱动，GC 保留为兜底 | 已采纳 |
 
 ## 什么时候写 ADR
 

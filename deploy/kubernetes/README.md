@@ -2,6 +2,8 @@
 
 本文档描述如何把 CloudDrive 的 6 个 Go 服务（3 个 API + 3 个 RPC）和 4 个基础设施
 （MySQL / Redis / etcd / MinIO）部署到一个 Kubernetes 集群。
+Kafka 链路（Redpanda + `storage-worker`）目前只接入了 Docker Compose，尚未纳入本目录清单，
+见文末“已知限制”。
 
 > 这些清单面向开发、演示和单节点测试集群。生产环境请使用云托管数据库、托管 Redis、
 > 托管 etcd 和对象存储，或至少使用带备份、多副本、监控的 Operator；详见文末“已知限制”。
@@ -282,6 +284,10 @@ kubectl delete -f deploy/kubernetes/namespace.yaml
   没有自动故障转移和备份。任何节点故障都会导致数据不可用。生产请使用托管服务。
 - **MySQL 只初始化一次**：`/docker-entrypoint-initdb.d` 只在数据目录为空时执行。
   修改 `service/*/model/*.sql` 后需要重建 PVC 或手工执行迁移；生产建议使用迁移工具。
+- **未包含 Kafka 链路**：清单没有 Redpanda 和 `storage-worker`。部署到集群后，
+  对象清理仍靠 `status='deleting'` + 后台轮询 GC（最终一致，最坏 10 分钟），
+  删除请求照常写入 `outbox_events` 但不会有人投递。需要事件驱动快路径时，
+  参照 `docker-compose.yml` 增加 broker 与 worker 的 Deployment。
 - **没有 HPA**：6 个服务固定 2 副本，未配置 HorizontalPodAutoscaler，也没有基于
   CPU/QPS 的弹性伸缩。登录限流仍是进程内令牌桶，2 副本会把总限流放大。
 - **没有 Ingress / TLS**：所有 Service 都是 ClusterIP，只能通过 `port-forward` 或
