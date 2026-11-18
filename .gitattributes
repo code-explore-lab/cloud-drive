@@ -1,0 +1,8 @@
+# 统一换行符为 LF。
+#
+# Windows 上 core.autocrlf=true（本机就是）会把检出的文本文件转成 CRLF，
+# 带来两个问题：
+#   - gofmt 把 CRLF 文件判为未格式化，只改了换行的「假改动」会让 CI 挂掉；
+#   - shell 脚本变成 CRLF 后报 `bad interpreter: /bin/bash^M`。
+# 这里在仓库内覆盖全局 autocrlf，所有平台检出都是 LF，二进制文件自动识别不受影响。
+* text=auto eol=lf
