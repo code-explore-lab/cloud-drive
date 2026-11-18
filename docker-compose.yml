@@ -23,6 +23,10 @@ x-minio-env: &minio-env
   MINIO_BUCKET: "${MINIO_BUCKET:-cloud-drive}"
   MINIO_USE_SSL: "false"
 
+# 只有 storage.rpc（outbox dispatcher）和 storage-worker 需要 Kafka。
+x-kafka-env: &kafka-env
+  KAFKA_BROKERS: "redpanda:9092"
+
 services:
   # ---------------- 基础设施 ----------------
 
@@ -105,6 +109,31 @@ services:
       - minio-data:/data
     restart: unless-stopped
 
+  # Kafka 协议兼容 broker。单节点 dev-container 模式：不需要 ZooKeeper/KRaft 控制器，
+  # 内部地址走 compose 网络（redpanda:9092），外部映射到 19092 供宿主机 rpk/客户端使用。
+  redpanda:
+    image: redpandadata/redpanda:v26.2.4
+    command:
+      - redpanda
+      - start
+      - --mode=dev-container
+      - --smp=1
+      - --memory=512M
+      - --overprovisioned
+      - --kafka-addr=internal://0.0.0.0:9092,external://0.0.0.0:19092
+      - --advertise-kafka-addr=internal://redpanda:9092,external://127.0.0.1:19092
+    ports:
+      - "19092:19092"
+    volumes:
+      - redpanda-data:/var/lib/redpanda/data
+    healthcheck:
+      test: ["CMD-SHELL", "rpk cluster health | grep -q Healthy"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+    restart: unless-stopped
+
   # ---------------- RPC 服务 ----------------
 
   user.rpc:
@@ -157,7 +186,7 @@ services:
     image: cloud-drive/storage-rpc:dev
     command: ["-f", "/app/etc/config.yaml"]
     environment:
-      <<: [*rpc-env, *minio-env]
+      <<: [*rpc-env, *minio-env, *kafka-env]
     volumes:
       - ./deploy/config/storage.rpc.yaml:/app/etc/config.yaml:ro
     depends_on:
@@ -169,6 +198,32 @@ services:
         condition: service_healthy
       minio:
         condition: service_started
+    # 刻意不依赖 redpanda：outbox 的意义就是 Kafka 不可用时删除请求仍能成功入队，
+    # dispatcher 会在 broker 就绪后自动补投（EnsureTopics 带重试）。
+    restart: unless-stopped
+
+  # 独立消费者：把 storage.events 里的对象清理事件落到 MinIO。
+  # 不注册 etcd，所以不需要 etcd 依赖。
+  storage-worker:
+    build:
+      <<: *build-common
+      args:
+        SERVICE_DIR: ./service/storage/worker
+    image: cloud-drive/storage-worker:dev
+    command: ["-f", "/app/etc/config.yaml"]
+    environment:
+      <<: [*rpc-env, *minio-env, *kafka-env]
+    volumes:
+      - ./deploy/config/storage-worker.yaml:/app/etc/config.yaml:ro
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_started
+      redpanda:
+        condition: service_healthy
     restart: unless-stopped
 
   # ---------------- API 服务 ----------------
@@ -299,5 +354,6 @@ volumes:
   redis-data:
   etcd-data:
   minio-data:
+  redpanda-data:
   prometheus-data:
   grafana-data:
