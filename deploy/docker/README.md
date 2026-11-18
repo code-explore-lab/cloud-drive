@@ -123,8 +123,21 @@ docker run --rm -p 8000:8000 \
 
 ## 六、BuildKit 与缓存
 
-Dockerfile 使用了 `RUN --mount=type=cache` 缓存 Go module 和编译缓存，需要 BuildKit。
-Docker 23+ 默认启用 BuildKit；老版本可以显式开启：
+Dockerfile 用了两个 `RUN --mount=type=cache` 挂载：`/go/pkg/mod`（模块下载）和
+`/root/.cache/go-build`（编译缓存）。两者都不写入镜像层，但会在同一台机器上跨构建复用，
+七个服务并行构建时也共享同一份缓存。
+
+实测（6 核）：
+
+| 场景 | 耗时 |
+|---|---|
+| 首次冷构建（缓存为空） | 单个服务约 2 分半 |
+| 改一个源文件后重建 | 约 10 秒（只重编改动的包） |
+| 源码未变 | 约 2 秒（整层命中缓存） |
+
+没有这两个挂载时，每次构建都在全新容器里从零编译全部依赖，七个服务并行需要 20 分钟以上。
+
+需要 BuildKit。Docker 23+ 默认启用；老版本可以显式开启：
 
 ```bash
 DOCKER_BUILDKIT=1 docker build --build-arg SERVICE_DIR=./service/user/api -t cloud-drive/user-api:dev .
@@ -169,3 +182,4 @@ docker image inspect cloud-drive/user-api:dev --format '{{.Size}}'
 | `go: module lookup disabled` / 下载超时 | 通过 `--build-arg GOPROXY=https://goproxy.cn,direct` 指定可用代理 |
 | `permission denied` 写文件 | 容器是非 root 且 K8s 根文件系统只读；把可写目录挂到 `/tmp` 或数据卷 |
 | 镜像里找不到配置文件 | 设计如此：配置不打进镜像，运行时挂载到 `/app/etc/config.yaml` 并用 `-f` 指定 |
+| 某一步 `DONE` 了上万秒，构建像卡死 | 构建期间机器进了待机/休眠，WSL2 虚拟机被挂起，而 BuildKit 的墙钟仍在走。可用 `Get-WinEvent -FilterHashtable @{LogName='System'; ProviderName='Microsoft-Windows-Kernel-Power'; ID=506,507}` 核对待机时段；构建前 `powercfg /change standby-timeout-ac 0` 可避免 |

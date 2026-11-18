@@ -15,13 +15,23 @@ ARG GOPROXY=https://goproxy.cn,direct
 ENV GOPROXY=${GOPROXY}
 
 # 先只拷贝依赖清单，命中构建缓存。
+#
+# 两个 cache mount 是构建速度的关键：
+#   - /go/pkg/mod     下载过的模块，跨构建复用（go.mod 不变时不用重新下载）
+#   - /root/.cache/go-build  Go 编译缓存，未改动包的 .a 文件直接复用
+# 没有它们时每次构建都在全新容器里从零编译全部依赖，7 个服务并行要 20 分钟以上；
+# 有了之后只有首次（缓存为空）是冷的，后续重建基本是秒级。
+# cache mount 的内容不写进镜像层，所以下面 go build 的那一步也要挂同样的目录。
 COPY go.mod go.sum ./
-RUN go mod download
+RUN --mount=type=cache,target=/go/pkg/mod \
+    go mod download
 
 COPY . .
 
 ARG SERVICE_DIR=./service/user/api
-RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /out/app ${SERVICE_DIR}
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /out/app ${SERVICE_DIR}
 
 FROM alpine:3.20
 
