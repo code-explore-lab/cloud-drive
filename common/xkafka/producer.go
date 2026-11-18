@@ -48,7 +48,7 @@ func (p *Producer) PublishMessage(ctx context.Context, msg kafka.Message) error 
 	if p.writer == nil {
 		return fmt.Errorf("xkafka: producer is not initialized")
 	}
-	return p.writer.WriteMessages(ctx, msg)
+	return p.writer.WriteMessages(ctx, normalizeTopic(p.writer.Topic, msg))
 }
 
 // PublishBatch 一次写入多条消息，减少逐条发送的往返。
@@ -62,7 +62,25 @@ func (p *Producer) PublishBatch(ctx context.Context, msgs []kafka.Message) error
 	if p.writer == nil {
 		return fmt.Errorf("xkafka: producer is not initialized")
 	}
-	return p.writer.WriteMessages(ctx, msgs...)
+	normalized := make([]kafka.Message, len(msgs))
+	for i, msg := range msgs {
+		normalized[i] = normalizeTopic(p.writer.Topic, msg)
+	}
+	return p.writer.WriteMessages(ctx, normalized...)
+}
+
+// normalizeTopic 清空与 Writer 相同的 Message.Topic。
+//
+// kafka-go 不允许 Writer.Topic 和 Message.Topic 同时非空，会返回
+// "Topic must not be specified for both Writer and Message"。
+// 本包的 Producer 总是固定一个 topic，所以消息上重复同一 topic 属于冗余信息；
+// 清空后由 Writer 统一指定。若消息带了不同的 topic，保留原样交给 kafka-go 报错，
+// 避免把「发错 topic」这种调用错误静默吞掉。
+func normalizeTopic(writerTopic string, msg kafka.Message) kafka.Message {
+	if writerTopic != "" && msg.Topic == writerTopic {
+		msg.Topic = ""
+	}
+	return msg
 }
 
 // messageKey 把空 key 转成 nil。

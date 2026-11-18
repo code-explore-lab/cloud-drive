@@ -3,6 +3,8 @@ package xkafka
 import (
 	"context"
 	"testing"
+
+	"github.com/segmentio/kafka-go"
 )
 
 func TestMessageKey(t *testing.T) {
@@ -27,6 +29,26 @@ func TestPublishBatchEmptyIsNoop(t *testing.T) {
 
 	if err := p.PublishBatch(context.Background(), nil); err != nil {
 		t.Fatalf("PublishBatch(nil): %v", err)
+	}
+}
+
+func TestNormalizeTopic(t *testing.T) {
+	// 与 Writer 相同的 topic 应清空，否则 kafka-go 会拒绝发送。
+	msg := normalizeTopic(TopicStorageEventsDLQ, kafka.Message{Topic: TopicStorageEventsDLQ})
+	if msg.Topic != "" {
+		t.Fatalf("相同 topic 未清空: %q", msg.Topic)
+	}
+
+	// 不同 topic 保留原样，让 kafka-go 报错而不是静默改投。
+	msg = normalizeTopic(TopicStorageEventsDLQ, kafka.Message{Topic: TopicStorageEvents})
+	if msg.Topic != TopicStorageEvents {
+		t.Fatalf("不同 topic 被改写: %q", msg.Topic)
+	}
+
+	// 消息没指定 topic 时保持为空，走 Writer 的 topic。
+	msg = normalizeTopic(TopicStorageEvents, kafka.Message{})
+	if msg.Topic != "" {
+		t.Fatalf("空 topic 被改写: %q", msg.Topic)
 	}
 }
 
